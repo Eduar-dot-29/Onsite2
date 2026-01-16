@@ -32,6 +32,18 @@ start "API" cmd /k "call .venv\Scripts\activate && uvicorn app.main:app --reload
 start "Worker" cmd /k "call .venv\Scripts\activate && celery -A app.workers.celery_app.celery_app worker --loglevel=info"
 start "Beat" cmd /k "call .venv\Scripts\activate && celery -A app.workers.celery_app.celery_app beat --loglevel=info"
 
+set "LOCAL_IP="
+for /f "tokens=2 delims=:" %%A in ('ipconfig ^| findstr /R /C:"IPv4 Address"') do (
+  set "LOCAL_IP=%%A"
+  goto :afterip
+)
+:afterip
+if defined LOCAL_IP set "LOCAL_IP=%LOCAL_IP: =%"
+
+echo.
+echo API docs: http://localhost:8000/docs
+if defined LOCAL_IP echo LAN access: http://%LOCAL_IP%:8000/docs
+
 echo.
 echo Services started. Use Ctrl+C in each window to stop.
 pause
