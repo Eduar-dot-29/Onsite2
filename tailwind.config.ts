@@ -31,7 +31,7 @@ const config: Config = {
         primary: {
           DEFAULT: "#3B82F6",
           foreground: "#FFFFFF",
-          glow: "rgba(59, 130, 246, 0.5)",
+          glow: "rgba(59, 130, 246, 0.3)",
         },
         secondary: {
           DEFAULT: "#2A3241",
