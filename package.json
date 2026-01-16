@@ -1,0 +1,43 @@
+{
+  "name": "on-site-on-transit",
+  "version": "1.0.0",
+  "description": "SaaS de automatización de seguimiento de envíos.",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ebanion/On-site-On-Transit.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/ebanion/On-site-On-Transit/issues"
+  },
+  "homepage": "https://github.com/ebanion/On-site-On-Transit#readme",
+  "dependencies": {
+    "date-fns": "^4.1.0",
+    "framer-motion": "^12.26.2",
+    "lucide-react": "^0.562.0",
+    "next": "^16.1.2",
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3",
+    "tailwindcss-animate": "^1.0.7"
+  },
+  "devDependencies": {
+    "@types/node": "^25.0.9",
+    "@types/react": "^19.2.8",
+    "@types/react-dom": "^19.2.3",
+    "autoprefixer": "^10.4.23",
+    "eslint": "^9.39.2",
+    "eslint-config-next": "^16.1.2",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^4.1.18",
+    "typescript": "^5.9.3"
+  }
+}
