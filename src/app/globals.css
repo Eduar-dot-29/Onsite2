@@ -1,6 +1,49 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+/* Custom theme for On-site On-Transit */
+@theme {
+  /* Colors */
+  --color-background: #0B0E11;
+  --color-foreground: #F9FAFB;
+  
+  --color-card: #151A23;
+  --color-card-foreground: #F9FAFB;
+  
+  --color-popover: #151A23;
+  --color-popover-foreground: #F9FAFB;
+  
+  --color-primary: #3B82F6;
+  --color-primary-foreground: #FFFFFF;
+  --color-primary-glow: rgba(59, 130, 246, 0.3);
+  
+  --color-secondary: #2A3241;
+  --color-secondary-foreground: #F9FAFB;
+  
+  --color-muted: #1F2937;
+  --color-muted-foreground: #9CA3AF;
+  
+  --color-accent: #8B5CF6;
+  --color-accent-foreground: #FFFFFF;
+  
+  --color-destructive: #EF4444;
+  --color-destructive-foreground: #FFFFFF;
+  
+  --color-success: #10B981;
+  --color-warning: #F59E0B;
+  
+  --color-border: #2A3241;
+  --color-input: #1F2937;
+  --color-ring: #3B82F6;
+
+  /* Border radius */
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-2xl: 1.5rem;
+
+  /* Box shadows */
+  --shadow-glow-primary: 0 0 20px -5px rgba(59, 130, 246, 0.3);
+  --shadow-glow-danger: 0 0 20px -5px rgba(239, 68, 68, 0.3);
+}
 
 html,
 body {
@@ -8,5 +51,8 @@ body {
 }
 
 body {
-  @apply bg-background text-foreground antialiased;
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
