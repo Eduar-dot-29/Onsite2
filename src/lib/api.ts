@@ -54,6 +54,24 @@ export interface Contact {
   created_at: string;
 }
 
+export interface ShipmentEvent {
+  id: string;
+  shipment_id: string;
+  event_type: string;
+  payload: Record<string, unknown>;
+  created_at: string;
+}
+
+export interface TrackingCheckin {
+  id: string;
+  shipment_id: string;
+  due_at: string;
+  sent_at: string | null;
+  answered_at: string | null;
+  status: 'pending' | 'sent' | 'answered' | 'missed' | 'escalated';
+  created_at: string;
+}
+
 export interface ContactCreate {
   name: string;
   channel: 'telegram' | 'sms' | 'whatsapp';
@@ -156,6 +174,145 @@ const demoContacts: Contact[] = [
     created_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
   },
 ];
+
+// Demo events for shipments
+const demoEvents: Record<string, ShipmentEvent[]> = {
+  'ship-001': [
+    {
+      id: 'evt-001',
+      shipment_id: 'ship-001',
+      event_type: 'SHIPMENT_CREATED',
+      payload: {},
+      created_at: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+    },
+    {
+      id: 'evt-002',
+      shipment_id: 'ship-001',
+      event_type: 'DRIVER_ASSIGNED',
+      payload: { contact_name: 'Carlos Rodríguez' },
+      created_at: new Date(Date.now() - 23 * 60 * 60 * 1000).toISOString(),
+    },
+    {
+      id: 'evt-003',
+      shipment_id: 'ship-001',
+      event_type: 'CHECKIN_SCHEDULED',
+      payload: { count: 3 },
+      created_at: new Date(Date.now() - 22 * 60 * 60 * 1000).toISOString(),
+    },
+    {
+      id: 'evt-004',
+      shipment_id: 'ship-001',
+      event_type: 'CHECKIN_SENT',
+      payload: { checkin_id: 'chk-001' },
+      created_at: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
+    },
+    {
+      id: 'evt-005',
+      shipment_id: 'ship-001',
+      event_type: 'CHECKIN_OK',
+      payload: { checkin_id: 'chk-001' },
+      created_at: new Date(Date.now() - 3.9 * 60 * 60 * 1000).toISOString(),
+    },
+    {
+      id: 'evt-006',
+      shipment_id: 'ship-001',
+      event_type: 'CHECKIN_SENT',
+      payload: { checkin_id: 'chk-002' },
+      created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+    },
+  ],
+  'ship-002': [
+    {
+      id: 'evt-010',
+      shipment_id: 'ship-002',
+      event_type: 'SHIPMENT_CREATED',
+      payload: {},
+      created_at: new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString(),
+    },
+    {
+      id: 'evt-011',
+      shipment_id: 'ship-002',
+      event_type: 'CHECKIN_SENT',
+      payload: { checkin_id: 'chk-010' },
+      created_at: new Date(Date.now() - 10 * 60 * 60 * 1000).toISOString(),
+    },
+    {
+      id: 'evt-012',
+      shipment_id: 'ship-002',
+      event_type: 'INCIDENT_TRAFFIC',
+      payload: { checkin_id: 'chk-010' },
+      created_at: new Date(Date.now() - 9.5 * 60 * 60 * 1000).toISOString(),
+    },
+    {
+      id: 'evt-013',
+      shipment_id: 'ship-002',
+      event_type: 'DELAY_REPORTED',
+      payload: { delay_minutes: 120 },
+      created_at: new Date(Date.now() - 9 * 60 * 60 * 1000).toISOString(),
+    },
+    {
+      id: 'evt-014',
+      shipment_id: 'ship-002',
+      event_type: 'LOCATION_RECEIVED',
+      payload: { lat: 38.5, lon: -4.2 },
+      created_at: new Date(Date.now() - 8.5 * 60 * 60 * 1000).toISOString(),
+    },
+    {
+      id: 'evt-015',
+      shipment_id: 'ship-002',
+      event_type: 'ETA_UPDATED',
+      payload: { old_eta: '2025-01-20T10:00:00Z', new_eta: '2025-01-20T12:30:00Z' },
+      created_at: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString(),
+    },
+    {
+      id: 'evt-016',
+      shipment_id: 'ship-002',
+      event_type: 'NO_RESPONSE',
+      payload: { checkin_id: 'chk-011' },
+      created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+    },
+    {
+      id: 'evt-017',
+      shipment_id: 'ship-002',
+      event_type: 'ESCALATED',
+      payload: { reason: 'no_response' },
+      created_at: new Date(Date.now() - 1.5 * 60 * 60 * 1000).toISOString(),
+    },
+  ],
+};
+
+// Demo checkins
+const demoCheckins: Record<string, TrackingCheckin[]> = {
+  'ship-001': [
+    {
+      id: 'chk-001',
+      shipment_id: 'ship-001',
+      due_at: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
+      sent_at: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
+      answered_at: new Date(Date.now() - 3.9 * 60 * 60 * 1000).toISOString(),
+      status: 'answered',
+      created_at: new Date(Date.now() - 22 * 60 * 60 * 1000).toISOString(),
+    },
+    {
+      id: 'chk-002',
+      shipment_id: 'ship-001',
+      due_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+      sent_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+      answered_at: null,
+      status: 'sent',
+      created_at: new Date(Date.now() - 22 * 60 * 60 * 1000).toISOString(),
+    },
+    {
+      id: 'chk-003',
+      shipment_id: 'ship-001',
+      due_at: new Date(Date.now() + 1 * 60 * 60 * 1000).toISOString(),
+      sent_at: null,
+      answered_at: null,
+      status: 'pending',
+      created_at: new Date(Date.now() - 22 * 60 * 60 * 1000).toISOString(),
+    },
+  ],
+};
 
 class ApiClient {
   private token: string | null = null;
@@ -363,6 +520,193 @@ class ApiClient {
       method: 'POST',
       body: JSON.stringify(data),
     });
+  }
+
+  // Tracking - Events
+  async getShipmentEvents(shipmentId: string): Promise<ShipmentEvent[]> {
+    if (DEMO_MODE) {
+      const savedEvents = typeof window !== 'undefined' ? localStorage.getItem('demo_events') : null;
+      const events = savedEvents ? JSON.parse(savedEvents) : demoEvents;
+      return events[shipmentId] || [];
+    }
+    return this.request<ShipmentEvent[]>(`/tracking/shipments/${shipmentId}/events`);
+  }
+
+  async getShipmentCheckins(shipmentId: string): Promise<TrackingCheckin[]> {
+    if (DEMO_MODE) {
+      const savedCheckins = typeof window !== 'undefined' ? localStorage.getItem('demo_checkins') : null;
+      const checkins = savedCheckins ? JSON.parse(savedCheckins) : demoCheckins;
+      return checkins[shipmentId] || [];
+    }
+    return this.request<TrackingCheckin[]>(`/tracking/shipments/${shipmentId}/checkins`);
+  }
+
+  // Demo simulation methods
+  async simulateCheckinResponse(
+    shipmentId: string,
+    checkinId: string,
+    response: 'ok' | 'breakdown' | 'traffic'
+  ): Promise<{ success: boolean }> {
+    if (!DEMO_MODE) return { success: false };
+
+    const savedEvents = typeof window !== 'undefined' ? localStorage.getItem('demo_events') : null;
+    const events: Record<string, ShipmentEvent[]> = savedEvents ? JSON.parse(savedEvents) : { ...demoEvents };
+    
+    const savedCheckins = typeof window !== 'undefined' ? localStorage.getItem('demo_checkins') : null;
+    const checkins: Record<string, TrackingCheckin[]> = savedCheckins ? JSON.parse(savedCheckins) : { ...demoCheckins };
+
+    if (!events[shipmentId]) events[shipmentId] = [];
+    if (!checkins[shipmentId]) checkins[shipmentId] = [];
+
+    // Update checkin status
+    const checkin = checkins[shipmentId].find(c => c.id === checkinId);
+    if (checkin) {
+      checkin.status = 'answered';
+      checkin.answered_at = new Date().toISOString();
+    }
+
+    // Add event
+    const eventType = response === 'ok' ? 'CHECKIN_OK' : response === 'breakdown' ? 'INCIDENT_BREAKDOWN' : 'INCIDENT_TRAFFIC';
+    events[shipmentId].push({
+      id: `evt-${Date.now()}`,
+      shipment_id: shipmentId,
+      event_type: eventType,
+      payload: { checkin_id: checkinId },
+      created_at: new Date().toISOString(),
+    });
+
+    // Update shipment status if incident
+    if (response !== 'ok') {
+      const shipment = this.demoShipments.find(s => s.id === shipmentId);
+      if (shipment) {
+        shipment.status = 'delayed';
+        this.saveDemoData();
+      }
+    }
+
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('demo_events', JSON.stringify(events));
+      localStorage.setItem('demo_checkins', JSON.stringify(checkins));
+    }
+
+    return { success: true };
+  }
+
+  async simulateDelayReport(shipmentId: string, delayMinutes: number): Promise<{ success: boolean }> {
+    if (!DEMO_MODE) return { success: false };
+
+    const savedEvents = typeof window !== 'undefined' ? localStorage.getItem('demo_events') : null;
+    const events: Record<string, ShipmentEvent[]> = savedEvents ? JSON.parse(savedEvents) : { ...demoEvents };
+
+    if (!events[shipmentId]) events[shipmentId] = [];
+
+    events[shipmentId].push({
+      id: `evt-${Date.now()}`,
+      shipment_id: shipmentId,
+      event_type: 'DELAY_REPORTED',
+      payload: { delay_minutes: delayMinutes },
+      created_at: new Date().toISOString(),
+    });
+
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('demo_events', JSON.stringify(events));
+    }
+
+    return { success: true };
+  }
+
+  async simulateLocationAndRecalculate(
+    shipmentId: string,
+    lat: number,
+    lon: number,
+    delayMinutes: number
+  ): Promise<{ success: boolean; newEta?: string }> {
+    if (!DEMO_MODE) return { success: false };
+
+    const savedEvents = typeof window !== 'undefined' ? localStorage.getItem('demo_events') : null;
+    const events: Record<string, ShipmentEvent[]> = savedEvents ? JSON.parse(savedEvents) : { ...demoEvents };
+
+    if (!events[shipmentId]) events[shipmentId] = [];
+
+    const shipment = this.demoShipments.find(s => s.id === shipmentId);
+    if (!shipment) return { success: false };
+
+    const oldEta = shipment.estimated_arrival_at;
+    const newEta = new Date(Date.now() + (delayMinutes + 60) * 60 * 1000).toISOString();
+    shipment.estimated_arrival_at = newEta;
+    shipment.status = 'in_transit';
+
+    // Add events
+    events[shipmentId].push({
+      id: `evt-${Date.now()}-loc`,
+      shipment_id: shipmentId,
+      event_type: 'LOCATION_RECEIVED',
+      payload: { lat, lon },
+      created_at: new Date().toISOString(),
+    });
+
+    events[shipmentId].push({
+      id: `evt-${Date.now()}-route`,
+      shipment_id: shipmentId,
+      event_type: 'ROUTE_RECALCULATED',
+      payload: { distance_km: 150, duration_minutes: 90 },
+      created_at: new Date(Date.now() + 1000).toISOString(),
+    });
+
+    events[shipmentId].push({
+      id: `evt-${Date.now()}-eta`,
+      shipment_id: shipmentId,
+      event_type: 'ETA_UPDATED',
+      payload: { old_eta: oldEta, new_eta: newEta },
+      created_at: new Date(Date.now() + 2000).toISOString(),
+    });
+
+    this.saveDemoData();
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('demo_events', JSON.stringify(events));
+    }
+
+    return { success: true, newEta };
+  }
+
+  async simulateSendCheckin(shipmentId: string): Promise<TrackingCheckin | null> {
+    if (!DEMO_MODE) return null;
+
+    const savedCheckins = typeof window !== 'undefined' ? localStorage.getItem('demo_checkins') : null;
+    const checkins: Record<string, TrackingCheckin[]> = savedCheckins ? JSON.parse(savedCheckins) : { ...demoCheckins };
+    
+    const savedEvents = typeof window !== 'undefined' ? localStorage.getItem('demo_events') : null;
+    const events: Record<string, ShipmentEvent[]> = savedEvents ? JSON.parse(savedEvents) : { ...demoEvents };
+
+    if (!checkins[shipmentId]) checkins[shipmentId] = [];
+    if (!events[shipmentId]) events[shipmentId] = [];
+
+    const newCheckin: TrackingCheckin = {
+      id: `chk-${Date.now()}`,
+      shipment_id: shipmentId,
+      due_at: new Date().toISOString(),
+      sent_at: new Date().toISOString(),
+      answered_at: null,
+      status: 'sent',
+      created_at: new Date().toISOString(),
+    };
+
+    checkins[shipmentId].push(newCheckin);
+    
+    events[shipmentId].push({
+      id: `evt-${Date.now()}`,
+      shipment_id: shipmentId,
+      event_type: 'CHECKIN_SENT',
+      payload: { checkin_id: newCheckin.id },
+      created_at: new Date().toISOString(),
+    });
+
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('demo_checkins', JSON.stringify(checkins));
+      localStorage.setItem('demo_events', JSON.stringify(events));
+    }
+
+    return newCheckin;
   }
 
   isAuthenticated(): boolean {
