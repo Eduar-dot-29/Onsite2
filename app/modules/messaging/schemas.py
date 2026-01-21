@@ -28,3 +28,5 @@ class NormalizedMessage(BaseModel):
     user_first_name: str | None = None
     user_last_name: str | None = None
     username: str | None = None
+    # Contact info (when user shares phone)
+    shared_phone: str | None = None

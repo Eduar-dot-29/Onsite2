@@ -406,6 +406,35 @@ def find_or_create_telegram_contact(
     return contact, True
 
 
+def find_contact_by_phone(session: Session, tenant_id, phone: str):
+    """Find a contact by phone number."""
+    # Normalize phone for comparison
+    normalized = phone.strip()
+    if not normalized.startswith("+"):
+        normalized = "+" + normalized
+    
+    return (
+        session.query(shipment_models.Contact)
+        .filter(
+            shipment_models.Contact.tenant_id == tenant_id,
+            shipment_models.Contact.phone_e164 == normalized,
+        )
+        .one_or_none()
+    )
+
+
+def link_telegram_chat_to_contact(
+    session: Session,
+    contact: shipment_models.Contact,
+    telegram_chat_id: str,
+) -> shipment_models.Contact:
+    """Link a telegram chat_id to an existing contact."""
+    contact.telegram_chat_id = telegram_chat_id
+    session.add(contact)
+    session.flush()
+    return contact
+
+
 def get_due_checkins(session: Session, tenant_id, now: datetime) -> list[models.TrackingCheckin]:
     return (
         session.query(models.TrackingCheckin)

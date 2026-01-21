@@ -75,15 +75,55 @@ class TelegramProvider(MessagingProvider):
         return str(message.message_id)
 
     async def send_welcome_message(self, chat_id: str, driver_name: str) -> str | None:
-        """Send a welcome message when a driver registers via /start."""
+        """Send a welcome message when a driver is successfully linked."""
         if not self._bot:
             return None
         text = (
             f"¡Hola {driver_name}! 👋\n\n"
-            "Te has registrado correctamente como conductor.\n\n"
+            "Te has vinculado correctamente como conductor.\n\n"
             "A partir de ahora recibirás mensajes automáticos de seguimiento "
             "cuando te asignen un envío.\n\n"
             "No tienes que hacer nada más. ¡Buen viaje! 🚚"
+        )
+        message = await self._bot.send_message(chat_id=chat_id, text=text)
+        return str(message.message_id)
+
+    async def send_request_phone(self, chat_id: str, user_name: str) -> str | None:
+        """Ask the user to share their phone number to link their account."""
+        if not self._bot:
+            return None
+        text = (
+            f"¡Hola {user_name}! 👋\n\n"
+            "Para vincularte como conductor, necesito verificar tu número de teléfono.\n\n"
+            "Pulsa el botón de abajo para compartir tu número:"
+        )
+        keyboard = ReplyKeyboardMarkup(
+            [[KeyboardButton("📱 Compartir mi teléfono", request_contact=True)]],
+            resize_keyboard=True,
+            one_time_keyboard=True,
+        )
+        message = await self._bot.send_message(chat_id=chat_id, text=text, reply_markup=keyboard)
+        return str(message.message_id)
+
+    async def send_not_registered_message(self, chat_id: str) -> str | None:
+        """Tell the user their phone is not registered in the system."""
+        if not self._bot:
+            return None
+        text = (
+            "❌ Tu número de teléfono no está registrado en el sistema.\n\n"
+            "Contacta con tu empresa para que te den de alta como conductor."
+        )
+        message = await self._bot.send_message(chat_id=chat_id, text=text)
+        return str(message.message_id)
+
+    async def send_already_linked_message(self, chat_id: str, driver_name: str) -> str | None:
+        """Tell the user they are already linked."""
+        if not self._bot:
+            return None
+        text = (
+            f"¡Hola {driver_name}! 👋\n\n"
+            "Ya estás vinculado como conductor.\n"
+            "Recibirás mensajes de seguimiento cuando te asignen un envío."
         )
         message = await self._bot.send_message(chat_id=chat_id, text=text)
         return str(message.message_id)
@@ -122,6 +162,24 @@ class TelegramProvider(MessagingProvider):
             user_first_name = from_user.get("first_name")
             user_last_name = from_user.get("last_name")
             username = from_user.get("username")
+
+            # Check if user shared their contact (phone number)
+            if "contact" in message:
+                contact = message["contact"]
+                phone_number = contact.get("phone_number")
+                # Normalize phone: ensure it starts with +
+                if phone_number and not phone_number.startswith("+"):
+                    phone_number = "+" + phone_number
+                return NormalizedMessage(
+                    type=MessageType.CONTACT,
+                    external_user_id=str(chat_id),
+                    message_id=str(message.get("message_id")) if message.get("message_id") else None,
+                    timestamp=timestamp,
+                    user_first_name=user_first_name,
+                    user_last_name=user_last_name,
+                    username=username,
+                    shared_phone=phone_number,
+                )
 
             if "location" in message:
                 location = message["location"]
