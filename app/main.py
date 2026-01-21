@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-import subprocess
+import os
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -24,17 +24,20 @@ app = FastAPI(title="On-site On-Transit")
 def run_migrations():
     """Run database migrations on startup."""
     try:
+        from alembic.config import Config
+        from alembic import command
+        
         logger.info("Running database migrations...")
-        result = subprocess.run(
-            ["alembic", "upgrade", "head"],
-            capture_output=True,
-            text=True,
-            timeout=60,
-        )
-        if result.returncode == 0:
-            logger.info("Migrations completed successfully")
-        else:
-            logger.error(f"Migration failed: {result.stderr}")
+        
+        # Get the directory where alembic.ini is located
+        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        alembic_ini = os.path.join(base_dir, "alembic.ini")
+        
+        alembic_cfg = Config(alembic_ini)
+        alembic_cfg.set_main_option("script_location", os.path.join(base_dir, "alembic"))
+        
+        command.upgrade(alembic_cfg, "head")
+        logger.info("Migrations completed successfully")
     except Exception as e:
         logger.error(f"Migration error: {e}")
 
