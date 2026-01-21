@@ -407,13 +407,17 @@ def find_or_create_telegram_contact(
 
 
 def find_contact_by_phone(session: Session, tenant_id, phone: str):
-    """Find a contact by phone number. Returns the first match if multiple exist."""
+    """
+    Find a contact by phone number.
+    Returns the most recently created contact if multiple exist with same phone.
+    """
     # Normalize phone for comparison
     normalized = phone.strip()
     if not normalized.startswith("+"):
         normalized = "+" + normalized
     
-    return (
+    # Use first() to handle multiple contacts with same phone
+    contact = (
         session.query(shipment_models.Contact)
         .filter(
             shipment_models.Contact.tenant_id == tenant_id,
@@ -422,6 +426,7 @@ def find_contact_by_phone(session: Session, tenant_id, phone: str):
         .order_by(shipment_models.Contact.created_at.desc())
         .first()
     )
+    return contact
 
 
 def link_telegram_chat_to_contact(
