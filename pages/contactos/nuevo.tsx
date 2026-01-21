@@ -12,6 +12,7 @@ export default function NuevoContactoPage() {
 
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
+  const [channel, setChannel] = useState<"TELEGRAM" | "WHATSAPP">("TELEGRAM");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,7 +28,7 @@ export default function NuevoContactoPage() {
 
       const data: ContactCreate = {
         name: name,
-        channel: "TELEGRAM",
+        channel: channel,
         telegram_chat_id: null,  // Se vincula cuando el conductor hace /start
         phone_e164: normalizedPhone,
       };
@@ -98,8 +99,23 @@ export default function NuevoContactoPage() {
                 required
               />
               <p className="mt-1.5 text-xs text-slate-500">
-                El teléfono con el que tiene Telegram registrado
+                El teléfono con el que tiene registrada la app de mensajería
               </p>
+            </div>
+
+            {/* Channel */}
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-1.5">
+                Canal de comunicación *
+              </label>
+              <select
+                value={channel}
+                onChange={(e) => setChannel(e.target.value as "TELEGRAM" | "WHATSAPP")}
+                className="w-full rounded-lg border border-border bg-input px-4 py-2.5 text-white focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+              >
+                <option value="TELEGRAM">📱 Telegram</option>
+                <option value="WHATSAPP">💬 WhatsApp (próximamente)</option>
+              </select>
             </div>
 
             {/* Info box */}

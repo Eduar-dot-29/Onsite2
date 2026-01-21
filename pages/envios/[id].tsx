@@ -261,7 +261,7 @@ export default function EnvioDetailPage() {
                     <div>
                       <p className="text-white font-medium">{assignedContact.name}</p>
                       <p className="text-sm text-slate-400">
-                        {assignedContact.channel === 'telegram' ? '📱 Telegram' : assignedContact.channel}
+                        {assignedContact.channel === 'TELEGRAM' ? '📱 Telegram' : assignedContact.channel === 'WHATSAPP' ? '💬 WhatsApp' : assignedContact.channel}
                         {assignedContact.telegram_chat_id && ` · ID: ${assignedContact.telegram_chat_id}`}
                       </p>
                     </div>
@@ -280,7 +280,7 @@ export default function EnvioDetailPage() {
                           className="flex-1 rounded-lg border border-border bg-input px-4 py-2.5 text-white focus:border-primary focus:outline-none"
                         >
                           <option value="">Seleccionar...</option>
-                          {contacts.filter(c => c.channel === 'telegram').map((contact) => (
+                          {contacts.filter(c => c.channel === 'TELEGRAM').map((contact) => (
                             <option key={contact.id} value={contact.id}>
                               {contact.name} (Telegram)
                             </option>
@@ -346,7 +346,7 @@ export default function EnvioDetailPage() {
                     <p>Asigna un conductor con Telegram</p>
                     <p className="text-xs mt-1">para enviar check-ins</p>
                   </div>
-                ) : assignedContact.channel !== 'telegram' ? (
+                ) : assignedContact.channel !== 'TELEGRAM' ? (
                   <div className="text-center py-6 text-slate-400 text-sm">
                     <p>El conductor no tiene Telegram configurado</p>
                   </div>

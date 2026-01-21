@@ -8,9 +8,8 @@ import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
 const channelConfig: Record<string, { label: string; icon: React.ElementType; color: string }> = {
-  telegram: { label: "Telegram", icon: MessageSquare, color: "text-blue-400" },
-  sms: { label: "SMS", icon: Phone, color: "text-green-400" },
-  whatsapp: { label: "WhatsApp", icon: MessageSquare, color: "text-emerald-400" },
+  TELEGRAM: { label: "Telegram", icon: MessageSquare, color: "text-blue-400" },
+  WHATSAPP: { label: "WhatsApp", icon: MessageSquare, color: "text-emerald-400" },
 };
 
 export default function ContactosPage() {
@@ -97,7 +96,7 @@ export default function ContactosPage() {
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {contacts.map((contact) => {
-              const channel = channelConfig[contact.channel] || channelConfig.telegram;
+              const channel = channelConfig[contact.channel] || channelConfig.TELEGRAM;
               const Icon = channel.icon;
 
               return (
