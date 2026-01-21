@@ -3,7 +3,7 @@ import { useRouter } from "next/router";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import AppLayout from "@/components/AppLayout";
-import { api, ShipmentCreate } from "@/lib/api";
+import { api, ShipmentCreate, extractErrorMessage } from "@/lib/api";
 
 export default function NuevoEnvioPage() {
   const router = useRouter();
@@ -43,7 +43,7 @@ export default function NuevoEnvioPage() {
       await api.createShipment(data);
       router.push("/envios");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error al crear envío");
+      setError(extractErrorMessage(err));
     } finally {
       setLoading(false);
     }

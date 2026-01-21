@@ -3,7 +3,7 @@ import { useRouter } from "next/router";
 import Link from "next/link";
 import { Plus, Package, MapPin, Clock, AlertTriangle } from "lucide-react";
 import AppLayout from "@/components/AppLayout";
-import { api, Shipment } from "@/lib/api";
+import { api, Shipment, extractErrorMessage } from "@/lib/api";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
@@ -35,7 +35,7 @@ export default function EnviosPage() {
       const data = await api.getShipments();
       setShipments(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error al cargar envíos");
+      setError(extractErrorMessage(err));
     } finally {
       setLoading(false);
     }

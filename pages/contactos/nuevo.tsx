@@ -3,7 +3,7 @@ import { useRouter } from "next/router";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import AppLayout from "@/components/AppLayout";
-import { api, ContactCreate } from "@/lib/api";
+import { api, ContactCreate, extractErrorMessage } from "@/lib/api";
 
 export default function NuevoContactoPage() {
   const router = useRouter();
@@ -35,7 +35,7 @@ export default function NuevoContactoPage() {
       await api.createContact(data);
       router.push("/contactos");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error al crear contacto");
+      setError(extractErrorMessage(err));
     } finally {
       setLoading(false);
     }

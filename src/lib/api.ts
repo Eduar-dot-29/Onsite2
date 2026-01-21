@@ -2,6 +2,92 @@
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://on-site-on-transit.onrender.com';
 
+/**
+ * FastAPI validation error detail item
+ */
+interface ValidationErrorDetail {
+  loc: (string | number)[];
+  msg: string;
+  type: string;
+}
+
+/**
+ * Possible error response structures from the backend
+ */
+interface ApiErrorResponse {
+  detail?: string | ValidationErrorDetail[] | Record<string, unknown>;
+  message?: string;
+  error?: string;
+}
+
+/**
+ * Extracts a human-readable error message from various error types.
+ * Handles: FastAPI validation errors, standard Error objects, fetch errors, and unknown types.
+ */
+export function extractErrorMessage(error: unknown): string {
+  // Handle null/undefined
+  if (error == null) {
+    return 'Error desconocido';
+  }
+
+  // Handle string directly
+  if (typeof error === 'string') {
+    return error;
+  }
+
+  // Handle standard Error objects
+  if (error instanceof Error) {
+    return error.message || 'Error desconocido';
+  }
+
+  // Handle API error response objects
+  if (typeof error === 'object') {
+    const errorObj = error as ApiErrorResponse;
+
+    // FastAPI validation errors: detail is an array
+    if (Array.isArray(errorObj.detail)) {
+      const messages = errorObj.detail
+        .map((item: ValidationErrorDetail) => {
+          const field = item.loc?.slice(-1)[0] || 'campo';
+          return `${field}: ${item.msg}`;
+        })
+        .join(', ');
+      return messages || 'Error de validación';
+    }
+
+    // Standard detail string
+    if (typeof errorObj.detail === 'string') {
+      return errorObj.detail;
+    }
+
+    // Detail is an object (convert to readable string)
+    if (errorObj.detail && typeof errorObj.detail === 'object') {
+      return JSON.stringify(errorObj.detail);
+    }
+
+    // Alternative error fields
+    if (typeof errorObj.message === 'string') {
+      return errorObj.message;
+    }
+
+    if (typeof errorObj.error === 'string') {
+      return errorObj.error;
+    }
+  }
+
+  // Last resort: try to stringify, but avoid [object Object]
+  try {
+    const str = JSON.stringify(error);
+    if (str && str !== '{}') {
+      return str;
+    }
+  } catch {
+    // JSON.stringify failed
+  }
+
+  return 'Error desconocido';
+}
+
 // Demo mode - set to false to use real backend
 const DEMO_MODE = false;
 
@@ -371,8 +457,9 @@ class ApiClient {
     });
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ detail: 'Request failed' }));
-      throw new Error(error.detail || 'Request failed');
+      const errorBody = await response.json().catch(() => ({ detail: 'Error de conexión' }));
+      const errorMessage = extractErrorMessage(errorBody);
+      throw new Error(errorMessage);
     }
 
     return response.json();

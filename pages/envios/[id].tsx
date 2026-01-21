@@ -18,7 +18,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 import AppLayout from "@/components/AppLayout";
-import { api, Shipment, Contact, ShipmentEvent, TrackingCheckin } from "@/lib/api";
+import { api, Shipment, Contact, ShipmentEvent, TrackingCheckin, extractErrorMessage } from "@/lib/api";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
@@ -71,7 +71,7 @@ export default function EnvioDetailPage() {
       setCheckins(checkinsData);
 
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error al cargar datos");
+      setError(extractErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -86,7 +86,7 @@ export default function EnvioDetailPage() {
       setShipment(updated);
       setSelectedContact("");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error al asignar contacto");
+      setError(extractErrorMessage(err));
     } finally {
       setAssigning(false);
     }
@@ -100,7 +100,7 @@ export default function EnvioDetailPage() {
       await api.sendManualCheckin(shipment.id);
       await loadData(shipment.id);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error al enviar check-in");
+      setError(extractErrorMessage(err));
     } finally {
       setSendingCheckin(false);
     }
