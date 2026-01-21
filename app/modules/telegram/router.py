@@ -23,14 +23,20 @@ router = APIRouter(prefix="/telegram", tags=["telegram"])
 async def telegram_webhook(
     tenant_id: UUID, request: Request, session: Session = Depends(get_session)
 ):
-    payload = await request.json()
-    provider = get_provider(ContactChannel.TELEGRAM)
-    message = provider.parse_incoming(payload)
-    if not message:
-        return {"ok": True}
+    try:
+        payload = await request.json()
+        logger.info("telegram.webhook.received", extra={"tenant_id": str(tenant_id), "payload_keys": list(payload.keys())})
+        
+        provider = get_provider(ContactChannel.TELEGRAM)
+        message = provider.parse_incoming(payload)
+        if not message:
+            logger.info("telegram.webhook.no_message_parsed")
+            return {"ok": True}
 
-    # Handle /start command - ask for phone number to link
-    if message.type == MessageType.COMMAND and message.action == MessageAction.START:
+        logger.info("telegram.webhook.message_parsed", extra={"type": message.type, "action": str(message.action)})
+
+        # Handle /start command - ask for phone number to link
+        if message.type == MessageType.COMMAND and message.action == MessageAction.START:
         # Verify tenant exists
         tenant = session.query(Tenant).filter(Tenant.id == tenant_id).one_or_none()
         if not tenant:
@@ -198,7 +204,10 @@ async def telegram_webhook(
             )
         return {"ok": True}
 
-    return {"ok": True}
+    except Exception as e:
+        logger.error("telegram.webhook.error", extra={"error": str(e), "tenant_id": str(tenant_id)})
+        # Return ok to Telegram so it doesn't retry, but log the error
+        return {"ok": True, "error_logged": True}
 
 
 def _delay_action_to_minutes(action: MessageAction) -> int:
