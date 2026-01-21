@@ -60,6 +60,11 @@ app.include_router(tracking_router)
 app.include_router(telegram_router)
 
 
+@app.get("/")
+def root():
+    return {"name": "On-site On-Transit API", "status": "running"}
+
+
 @app.get("/health")
 def health():
     return {"status": "ok"}
