@@ -95,3 +95,15 @@ def dev_login(data: schemas.DevLoginRequest, session: Session = Depends(get_sess
 @router.get("/me", response_model=schemas.UserOut)
 def me(current_user: User = Depends(get_current_user)):
     return current_user
+
+
+@router.get("/tenant-info")
+def tenant_info(current_user: User = Depends(get_current_user), session: Session = Depends(get_session)):
+    """Get current user's tenant information including the tenant_id needed for Telegram webhook."""
+    tenant = session.query(Tenant).filter(Tenant.id == current_user.tenant_id).one_or_none()
+    return {
+        "tenant_id": str(current_user.tenant_id),
+        "tenant_name": tenant.name if tenant else None,
+        "webhook_url": f"https://on-site-on-transit.onrender.com/telegram/webhook/{current_user.tenant_id}",
+        "instructions": "Configura el webhook de Telegram ejecutando: curl 'https://api.telegram.org/bot<TU_TOKEN>/setWebhook?url=<webhook_url>'"
+    }
