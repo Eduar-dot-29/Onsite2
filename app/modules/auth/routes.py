@@ -75,6 +75,23 @@ def token(data: schemas.TokenRequest, session: Session = Depends(get_session)):
     return schemas.TokenResponse(access_token=token)
 
 
+@router.post("/dev-login", response_model=schemas.TokenResponse)
+def dev_login(data: schemas.DevLoginRequest, session: Session = Depends(get_session)):
+    """
+    Simplified login for development/testing.
+    Only requires email - creates user automatically if doesn't exist.
+    """
+    user = service.find_or_create_dev_user(session, data.email)
+    if not user:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Could not create user")
+
+    session.commit()
+    token = create_access_token(
+        {"sub": str(user.id), "tenant_id": str(user.tenant_id), "role": user.role.value}
+    )
+    return schemas.TokenResponse(access_token=token)
+
+
 @router.get("/me", response_model=schemas.UserOut)
 def me(current_user: User = Depends(get_current_user)):
     return current_user

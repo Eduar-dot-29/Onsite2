@@ -51,3 +51,8 @@ class BootstrapRequest(BaseModel):
     tenant_name: str
     admin_email: EmailStr
     admin_password: str
+
+
+class DevLoginRequest(BaseModel):
+    """Simplified login for development/testing - only requires email."""
+    email: EmailStr

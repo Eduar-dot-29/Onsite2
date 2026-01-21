@@ -402,6 +402,33 @@ class ApiClient {
     return response;
   }
 
+  /**
+   * Simplified login for development/testing - only requires email.
+   * Creates user automatically if doesn't exist.
+   */
+  async devLogin(email: string): Promise<TokenResponse> {
+    if (DEMO_MODE) {
+      // Demo mode: accept any email
+      const demoToken = `demo-token-${Date.now()}`;
+      this.setToken(demoToken);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('tenant_id', DEMO_TENANT_ID);
+        localStorage.setItem('user_email', email);
+      }
+      return { access_token: demoToken, token_type: 'bearer' };
+    }
+
+    const response = await this.request<TokenResponse>('/auth/dev-login', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    });
+    this.setToken(response.access_token);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('user_email', email);
+    }
+    return response;
+  }
+
   async bootstrap(tenantName: string, adminEmail: string, adminPassword: string) {
     if (DEMO_MODE) {
       // Demo mode: simulate bootstrap
