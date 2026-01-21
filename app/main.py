@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import logging
-import os
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -21,25 +20,29 @@ app = FastAPI(title="On-site On-Transit")
 
 
 @app.on_event("startup")
-def run_migrations():
-    """Run database migrations on startup."""
+def create_tables():
+    """Create database tables on startup if they don't exist."""
     try:
-        from alembic.config import Config
-        from alembic import command
+        from sqlalchemy import inspect
+        from app.core.db import engine, Base
+        # Import all models to register them with Base
+        from app.modules.auth import models as auth_models
+        from app.modules.shipments import models as shipment_models
+        from app.modules.tracking import models as tracking_models
         
-        logger.info("Running database migrations...")
+        logger.info("Checking database tables...")
         
-        # Get the directory where alembic.ini is located
-        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        alembic_ini = os.path.join(base_dir, "alembic.ini")
+        inspector = inspect(engine)
+        existing_tables = inspector.get_table_names()
         
-        alembic_cfg = Config(alembic_ini)
-        alembic_cfg.set_main_option("script_location", os.path.join(base_dir, "alembic"))
-        
-        command.upgrade(alembic_cfg, "head")
-        logger.info("Migrations completed successfully")
+        if "users" not in existing_tables:
+            logger.info("Creating database tables...")
+            Base.metadata.create_all(bind=engine)
+            logger.info("Database tables created successfully")
+        else:
+            logger.info("Database tables already exist")
     except Exception as e:
-        logger.error(f"Migration error: {e}")
+        logger.error(f"Database setup error: {e}")
 
 # CORS configuration for frontend
 app.add_middleware(
