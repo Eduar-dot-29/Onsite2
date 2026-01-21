@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.core.db import get_session
 from app.core.enums import ContactChannel, EventType, IncidentType, MessageAction, MessageType
+from app.modules.auth.models import Tenant
 from app.modules.messaging.service import get_provider
 from app.modules.shipments import models as shipment_models
 from app.modules.tracking import service as tracking_service
@@ -26,6 +27,47 @@ async def telegram_webhook(
     provider = get_provider(ContactChannel.TELEGRAM)
     message = provider.parse_incoming(payload)
     if not message:
+        return {"ok": True}
+
+    # Handle /start command - auto-register driver
+    if message.type == MessageType.COMMAND and message.action == MessageAction.START:
+        # Verify tenant exists
+        tenant = session.query(Tenant).filter(Tenant.id == tenant_id).one_or_none()
+        if not tenant:
+            logger.warning("telegram.start.tenant_not_found", extra={"tenant_id": str(tenant_id)})
+            return {"ok": True}
+
+        contact, is_new = tracking_service.find_or_create_telegram_contact(
+            session,
+            tenant_id=tenant_id,
+            telegram_chat_id=message.external_user_id,
+            first_name=message.user_first_name,
+            last_name=message.user_last_name,
+            username=message.username,
+        )
+        session.commit()
+
+        # Build driver name for welcome message
+        driver_name = message.user_first_name or contact.name
+
+        if is_new:
+            logger.info(
+                "telegram.driver.registered",
+                extra={
+                    "contact_id": str(contact.id),
+                    "telegram_chat_id": message.external_user_id,
+                    "name": contact.name,
+                }
+            )
+            await provider.send_welcome_message(message.external_user_id, driver_name)
+        else:
+            # Driver already registered, send a friendly reminder
+            await provider.send_text(
+                contact,
+                f"¡Hola {driver_name}! Ya estás registrado como conductor. "
+                "Recibirás mensajes de seguimiento cuando te asignen un envío."
+            )
+
         return {"ok": True}
 
     contact = tracking_service.find_contact_by_channel(

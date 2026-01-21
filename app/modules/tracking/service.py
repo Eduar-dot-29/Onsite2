@@ -359,6 +359,53 @@ def find_contact_by_channel(session: Session, tenant_id, channel, external_id: s
     return query.one_or_none()
 
 
+def find_or_create_telegram_contact(
+    session: Session,
+    tenant_id,
+    telegram_chat_id: str,
+    first_name: str | None = None,
+    last_name: str | None = None,
+    username: str | None = None,
+) -> tuple[shipment_models.Contact, bool]:
+    """
+    Find an existing contact by telegram_chat_id or create a new one.
+    
+    Returns a tuple of (contact, is_new) where is_new is True if the contact was just created.
+    """
+    existing = find_contact_by_channel(
+        session,
+        tenant_id=tenant_id,
+        channel=ContactChannel.TELEGRAM,
+        external_id=telegram_chat_id,
+    )
+    if existing:
+        return existing, False
+
+    # Build the name from Telegram user info
+    name_parts = []
+    if first_name:
+        name_parts.append(first_name)
+    if last_name:
+        name_parts.append(last_name)
+    
+    if name_parts:
+        name = " ".join(name_parts)
+    elif username:
+        name = f"@{username}"
+    else:
+        name = f"Conductor Telegram {telegram_chat_id[-4:]}"
+
+    contact = shipment_models.Contact(
+        tenant_id=tenant_id,
+        name=name,
+        channel=ContactChannel.TELEGRAM,
+        telegram_chat_id=telegram_chat_id,
+    )
+    session.add(contact)
+    session.flush()
+    return contact, True
+
+
 def get_due_checkins(session: Session, tenant_id, now: datetime) -> list[models.TrackingCheckin]:
     return (
         session.query(models.TrackingCheckin)

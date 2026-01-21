@@ -74,6 +74,20 @@ class TelegramProvider(MessagingProvider):
         message = await self._bot.send_message(chat_id=contact.telegram_chat_id, text=text)
         return str(message.message_id)
 
+    async def send_welcome_message(self, chat_id: str, driver_name: str) -> str | None:
+        """Send a welcome message when a driver registers via /start."""
+        if not self._bot:
+            return None
+        text = (
+            f"¡Hola {driver_name}! 👋\n\n"
+            "Te has registrado correctamente como conductor.\n\n"
+            "A partir de ahora recibirás mensajes automáticos de seguimiento "
+            "cuando te asignen un envío.\n\n"
+            "No tienes que hacer nada más. ¡Buen viaje! 🚚"
+        )
+        message = await self._bot.send_message(chat_id=chat_id, text=text)
+        return str(message.message_id)
+
     def parse_incoming(self, payload: dict) -> NormalizedMessage | None:
         if "callback_query" in payload:
             callback = payload["callback_query"]
@@ -103,6 +117,12 @@ class TelegramProvider(MessagingProvider):
             if chat_id is None:
                 return None
 
+            # Extract user info from payload
+            from_user = message.get("from", {})
+            user_first_name = from_user.get("first_name")
+            user_last_name = from_user.get("last_name")
+            username = from_user.get("username")
+
             if "location" in message:
                 location = message["location"]
                 return NormalizedMessage(
@@ -115,15 +135,35 @@ class TelegramProvider(MessagingProvider):
                         accuracy_m=location.get("horizontal_accuracy"),
                     ),
                     timestamp=timestamp,
+                    user_first_name=user_first_name,
+                    user_last_name=user_last_name,
+                    username=username,
                 )
 
             if "text" in message:
+                text = message.get("text", "")
+                # Check if it's the /start command
+                if text.strip().lower() == "/start" or text.strip().lower().startswith("/start "):
+                    return NormalizedMessage(
+                        type=MessageType.COMMAND,
+                        action=MessageAction.START,
+                        external_user_id=str(chat_id),
+                        message_id=str(message.get("message_id")) if message.get("message_id") else None,
+                        text=text,
+                        timestamp=timestamp,
+                        user_first_name=user_first_name,
+                        user_last_name=user_last_name,
+                        username=username,
+                    )
                 return NormalizedMessage(
                     type=MessageType.TEXT,
                     external_user_id=str(chat_id),
                     message_id=str(message.get("message_id")) if message.get("message_id") else None,
-                    text=message.get("text"),
+                    text=text,
                     timestamp=timestamp,
+                    user_first_name=user_first_name,
+                    user_last_name=user_last_name,
+                    username=username,
                 )
         return None
 

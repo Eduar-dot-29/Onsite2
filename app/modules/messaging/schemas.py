@@ -24,3 +24,7 @@ class NormalizedMessage(BaseModel):
     shipment_id: UUID | None = None
     checkin_id: UUID | None = None
     timestamp: datetime
+    # User info (for registration)
+    user_first_name: str | None = None
+    user_last_name: str | None = None
+    username: str | None = None

@@ -59,6 +59,7 @@ class MessageType(str, Enum):
     BUTTON_CLICK = "BUTTON_CLICK"
     LOCATION = "LOCATION"
     TEXT = "TEXT"
+    COMMAND = "COMMAND"
 
 
 class MessageAction(str, Enum):
@@ -69,3 +70,4 @@ class MessageAction(str, Enum):
     DELAY_60 = "DELAY_60"
     DELAY_120 = "DELAY_120"
     DELAY_180 = "DELAY_180"
+    START = "START"
