@@ -6,15 +6,13 @@ export default function LoginPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [email, setEmail] = useState("");
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleLogin = async () => {
     setError("");
     setLoading(true);
 
     try {
-      await api.devLogin(email);
+      await api.devLogin("admin@pruebas.com");
       router.push("/dashboard");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error al iniciar sesión");
@@ -31,9 +29,9 @@ export default function LoginPage() {
             <span className="h-3 w-3 rounded-full bg-primary shadow-glow-primary" />
             <span className="text-xl font-semibold text-white">On-site Transit</span>
           </div>
-          <h1 className="text-2xl font-semibold text-white">Iniciar Sesión</h1>
+          <h1 className="text-2xl font-semibold text-white">Bienvenido</h1>
           <p className="mt-2 text-sm text-slate-400">
-            Accede a tu panel de seguimiento de envíos
+            Panel de seguimiento de envíos
           </p>
         </div>
 
@@ -44,32 +42,16 @@ export default function LoginPage() {
             </div>
           )}
 
-          <form onSubmit={handleLogin} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1.5">
-                Email
-              </label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full rounded-lg border border-border bg-input px-4 py-2.5 text-white placeholder-slate-500 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-                placeholder="tu@email.com"
-                required
-                autoFocus
-              />
-            </div>
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full rounded-lg bg-primary px-4 py-2.5 font-medium text-white shadow-glow-primary transition hover:brightness-110 disabled:opacity-50"
-            >
-              {loading ? "Entrando..." : "Entrar"}
-            </button>
-          </form>
+          <button
+            onClick={handleLogin}
+            disabled={loading}
+            className="w-full rounded-lg bg-primary px-4 py-3 font-medium text-white shadow-glow-primary transition hover:brightness-110 disabled:opacity-50"
+          >
+            {loading ? "Entrando..." : "Iniciar Sesión"}
+          </button>
 
           <p className="mt-6 text-center text-xs text-slate-500">
-            Entorno de pruebas - Solo introduce tu email para entrar
+            Entorno de pruebas
           </p>
         </div>
       </div>
