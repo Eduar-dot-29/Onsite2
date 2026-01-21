@@ -407,7 +407,7 @@ def find_or_create_telegram_contact(
 
 
 def find_contact_by_phone(session: Session, tenant_id, phone: str):
-    """Find a contact by phone number."""
+    """Find a contact by phone number. Returns the first match if multiple exist."""
     # Normalize phone for comparison
     normalized = phone.strip()
     if not normalized.startswith("+"):
@@ -419,7 +419,8 @@ def find_contact_by_phone(session: Session, tenant_id, phone: str):
             shipment_models.Contact.tenant_id == tenant_id,
             shipment_models.Contact.phone_e164 == normalized,
         )
-        .one_or_none()
+        .order_by(shipment_models.Contact.created_at.desc())
+        .first()
     )
 
 
