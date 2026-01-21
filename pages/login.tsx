@@ -4,9 +4,18 @@ import { api } from "@/lib/api";
 
 export default function LoginPage() {
   const router = useRouter();
+  const [isBootstrap, setIsBootstrap] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+
+  // Login fields
+  const [tenantId, setTenantId] = useState("");
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
+  // Bootstrap fields
+  const [tenantName, setTenantName] = useState("");
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -14,11 +23,28 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      // Demo mode: login with just email
-      await api.login("demo", email, "demo");
+      await api.login(tenantId, email, password);
       router.push("/dashboard");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error al iniciar sesión");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleBootstrap = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setSuccess("");
+    setLoading(true);
+
+    try {
+      const tenant = await api.bootstrap(tenantName, email, password) as { id: string; name: string };
+      setSuccess(`Organización "${tenant.name}" creada. Tu Tenant ID es: ${tenant.id}`);
+      setTenantId(tenant.id);
+      setIsBootstrap(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error al crear organización");
     } finally {
       setLoading(false);
     }
@@ -33,51 +59,144 @@ export default function LoginPage() {
             <span className="text-xl font-semibold text-white">On-site Transit</span>
           </div>
           <h1 className="text-2xl font-semibold text-white">
-            Iniciar Sesión
+            {isBootstrap ? "Crear Organización" : "Iniciar Sesión"}
           </h1>
           <p className="mt-2 text-sm text-slate-400">
-            Accede a tu panel de seguimiento de envíos
+            {isBootstrap
+              ? "Configura tu primera organización y usuario administrador"
+              : "Accede a tu panel de seguimiento de envíos"}
           </p>
         </div>
 
         <div className="rounded-2xl border border-border bg-card p-8">
-          {/* Demo mode banner */}
-          <div className="mb-6 rounded-lg bg-primary/10 border border-primary/20 p-3 text-sm text-primary">
-            <span className="font-medium">Modo Demo:</span> Ingresa cualquier email para acceder
-          </div>
-
           {error && (
             <div className="mb-4 rounded-lg bg-destructive/10 border border-destructive/20 p-3 text-sm text-destructive">
               {error}
             </div>
           )}
 
-          <form onSubmit={handleLogin} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1.5">
-                Email
-              </label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full rounded-lg border border-border bg-input px-4 py-2.5 text-white placeholder-slate-500 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-                placeholder="tu@email.com"
-                required
-              />
+          {success && (
+            <div className="mb-4 rounded-lg bg-success/10 border border-success/20 p-3 text-sm text-success">
+              {success}
             </div>
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full rounded-lg bg-primary px-4 py-2.5 font-medium text-white shadow-glow-primary transition hover:brightness-110 disabled:opacity-50"
-            >
-              {loading ? "Entrando..." : "Entrar al Dashboard"}
-            </button>
-          </form>
+          )}
 
-          <p className="mt-6 text-center text-xs text-slate-500">
-            Los datos son de demostración y se guardan en tu navegador
-          </p>
+          {isBootstrap ? (
+            <form onSubmit={handleBootstrap} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-1.5">
+                  Nombre de Organización
+                </label>
+                <input
+                  type="text"
+                  value={tenantName}
+                  onChange={(e) => setTenantName(e.target.value)}
+                  className="w-full rounded-lg border border-border bg-input px-4 py-2.5 text-white placeholder-slate-500 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                  placeholder="Mi Empresa Logística"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-1.5">
+                  Email del Administrador
+                </label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full rounded-lg border border-border bg-input px-4 py-2.5 text-white placeholder-slate-500 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                  placeholder="admin@empresa.com"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-1.5">
+                  Contraseña
+                </label>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full rounded-lg border border-border bg-input px-4 py-2.5 text-white placeholder-slate-500 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                  placeholder="••••••••"
+                  required
+                  minLength={6}
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full rounded-lg bg-primary px-4 py-2.5 font-medium text-white shadow-glow-primary transition hover:brightness-110 disabled:opacity-50"
+              >
+                {loading ? "Creando..." : "Crear Organización"}
+              </button>
+            </form>
+          ) : (
+            <form onSubmit={handleLogin} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-1.5">
+                  Tenant ID
+                </label>
+                <input
+                  type="text"
+                  value={tenantId}
+                  onChange={(e) => setTenantId(e.target.value)}
+                  className="w-full rounded-lg border border-border bg-input px-4 py-2.5 text-white placeholder-slate-500 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                  placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-1.5">
+                  Email
+                </label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full rounded-lg border border-border bg-input px-4 py-2.5 text-white placeholder-slate-500 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                  placeholder="tu@email.com"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-1.5">
+                  Contraseña
+                </label>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full rounded-lg border border-border bg-input px-4 py-2.5 text-white placeholder-slate-500 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                  placeholder="••••••••"
+                  required
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full rounded-lg bg-primary px-4 py-2.5 font-medium text-white shadow-glow-primary transition hover:brightness-110 disabled:opacity-50"
+              >
+                {loading ? "Entrando..." : "Iniciar Sesión"}
+              </button>
+            </form>
+          )}
+
+          <div className="mt-6 text-center">
+            <button
+              type="button"
+              onClick={() => {
+                setIsBootstrap(!isBootstrap);
+                setError("");
+                setSuccess("");
+              }}
+              className="text-sm text-primary hover:underline"
+            >
+              {isBootstrap
+                ? "¿Ya tienes cuenta? Inicia sesión"
+                : "¿Primera vez? Crear organización"}
+            </button>
+          </div>
         </div>
       </div>
     </main>

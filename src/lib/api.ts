@@ -1,9 +1,9 @@
 // API Client for On-site On-Transit Backend
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://on-site-on-transit.onrender.com';
 
-// Demo mode - set to true to bypass backend authentication
-const DEMO_MODE = true;
+// Demo mode - set to false to use real backend
+const DEMO_MODE = false;
 
 interface TokenResponse {
   access_token: string;
@@ -58,7 +58,7 @@ export interface ShipmentEvent {
   id: string;
   shipment_id: string;
   event_type: string;
-  payload: Record<string, unknown>;
+  payload_json: Record<string, unknown>;
   created_at: string;
 }
 
@@ -182,42 +182,42 @@ const demoEvents: Record<string, ShipmentEvent[]> = {
       id: 'evt-001',
       shipment_id: 'ship-001',
       event_type: 'SHIPMENT_CREATED',
-      payload: {},
+      payload_json: {},
       created_at: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
     },
     {
       id: 'evt-002',
       shipment_id: 'ship-001',
       event_type: 'DRIVER_ASSIGNED',
-      payload: { contact_name: 'Carlos Rodríguez' },
+      payload_json: { contact_name: 'Carlos Rodríguez' },
       created_at: new Date(Date.now() - 23 * 60 * 60 * 1000).toISOString(),
     },
     {
       id: 'evt-003',
       shipment_id: 'ship-001',
       event_type: 'CHECKIN_SCHEDULED',
-      payload: { count: 3 },
+      payload_json: { count: 3 },
       created_at: new Date(Date.now() - 22 * 60 * 60 * 1000).toISOString(),
     },
     {
       id: 'evt-004',
       shipment_id: 'ship-001',
       event_type: 'CHECKIN_SENT',
-      payload: { checkin_id: 'chk-001' },
+      payload_json: { checkin_id: 'chk-001' },
       created_at: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
     },
     {
       id: 'evt-005',
       shipment_id: 'ship-001',
       event_type: 'CHECKIN_OK',
-      payload: { checkin_id: 'chk-001' },
+      payload_json: { checkin_id: 'chk-001' },
       created_at: new Date(Date.now() - 3.9 * 60 * 60 * 1000).toISOString(),
     },
     {
       id: 'evt-006',
       shipment_id: 'ship-001',
       event_type: 'CHECKIN_SENT',
-      payload: { checkin_id: 'chk-002' },
+      payload_json: { checkin_id: 'chk-002' },
       created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
     },
   ],
@@ -226,56 +226,56 @@ const demoEvents: Record<string, ShipmentEvent[]> = {
       id: 'evt-010',
       shipment_id: 'ship-002',
       event_type: 'SHIPMENT_CREATED',
-      payload: {},
+      payload_json: {},
       created_at: new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString(),
     },
     {
       id: 'evt-011',
       shipment_id: 'ship-002',
       event_type: 'CHECKIN_SENT',
-      payload: { checkin_id: 'chk-010' },
+      payload_json: { checkin_id: 'chk-010' },
       created_at: new Date(Date.now() - 10 * 60 * 60 * 1000).toISOString(),
     },
     {
       id: 'evt-012',
       shipment_id: 'ship-002',
       event_type: 'INCIDENT_TRAFFIC',
-      payload: { checkin_id: 'chk-010' },
+      payload_json: { checkin_id: 'chk-010' },
       created_at: new Date(Date.now() - 9.5 * 60 * 60 * 1000).toISOString(),
     },
     {
       id: 'evt-013',
       shipment_id: 'ship-002',
       event_type: 'DELAY_REPORTED',
-      payload: { delay_minutes: 120 },
+      payload_json: { delay_minutes: 120 },
       created_at: new Date(Date.now() - 9 * 60 * 60 * 1000).toISOString(),
     },
     {
       id: 'evt-014',
       shipment_id: 'ship-002',
       event_type: 'LOCATION_RECEIVED',
-      payload: { lat: 38.5, lon: -4.2 },
+      payload_json: { lat: 38.5, lon: -4.2 },
       created_at: new Date(Date.now() - 8.5 * 60 * 60 * 1000).toISOString(),
     },
     {
       id: 'evt-015',
       shipment_id: 'ship-002',
       event_type: 'ETA_UPDATED',
-      payload: { old_eta: '2025-01-20T10:00:00Z', new_eta: '2025-01-20T12:30:00Z' },
+      payload_json: { old_eta: '2025-01-20T10:00:00Z', new_eta: '2025-01-20T12:30:00Z' },
       created_at: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString(),
     },
     {
       id: 'evt-016',
       shipment_id: 'ship-002',
       event_type: 'NO_RESPONSE',
-      payload: { checkin_id: 'chk-011' },
+      payload_json: { checkin_id: 'chk-011' },
       created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
     },
     {
       id: 'evt-017',
       shipment_id: 'ship-002',
       event_type: 'ESCALATED',
-      payload: { reason: 'no_response' },
+      payload_json: { reason: 'no_response' },
       created_at: new Date(Date.now() - 1.5 * 60 * 60 * 1000).toISOString(),
     },
   ],
@@ -541,6 +541,12 @@ class ApiClient {
     return this.request<TrackingCheckin[]>(`/tracking/shipments/${shipmentId}/checkins`);
   }
 
+  async sendManualCheckin(shipmentId: string): Promise<TrackingCheckin> {
+    return this.request<TrackingCheckin>(`/tracking/shipments/${shipmentId}/send-checkin`, {
+      method: 'POST',
+    });
+  }
+
   // Demo simulation methods
   async simulateCheckinResponse(
     shipmentId: string,
@@ -571,7 +577,7 @@ class ApiClient {
       id: `evt-${Date.now()}`,
       shipment_id: shipmentId,
       event_type: eventType,
-      payload: { checkin_id: checkinId },
+      payload_json: { checkin_id: checkinId },
       created_at: new Date().toISOString(),
     });
 
@@ -604,7 +610,7 @@ class ApiClient {
       id: `evt-${Date.now()}`,
       shipment_id: shipmentId,
       event_type: 'DELAY_REPORTED',
-      payload: { delay_minutes: delayMinutes },
+      payload_json: { delay_minutes: delayMinutes },
       created_at: new Date().toISOString(),
     });
 
@@ -641,7 +647,7 @@ class ApiClient {
       id: `evt-${Date.now()}-loc`,
       shipment_id: shipmentId,
       event_type: 'LOCATION_RECEIVED',
-      payload: { lat, lon },
+      payload_json: { lat, lon },
       created_at: new Date().toISOString(),
     });
 
@@ -649,7 +655,7 @@ class ApiClient {
       id: `evt-${Date.now()}-route`,
       shipment_id: shipmentId,
       event_type: 'ROUTE_RECALCULATED',
-      payload: { distance_km: 150, duration_minutes: 90 },
+      payload_json: { distance_km: 150, duration_minutes: 90 },
       created_at: new Date(Date.now() + 1000).toISOString(),
     });
 
@@ -657,7 +663,7 @@ class ApiClient {
       id: `evt-${Date.now()}-eta`,
       shipment_id: shipmentId,
       event_type: 'ETA_UPDATED',
-      payload: { old_eta: oldEta, new_eta: newEta },
+      payload_json: { old_eta: oldEta, new_eta: newEta },
       created_at: new Date(Date.now() + 2000).toISOString(),
     });
 
@@ -697,7 +703,7 @@ class ApiClient {
       id: `evt-${Date.now()}`,
       shipment_id: shipmentId,
       event_type: 'CHECKIN_SENT',
-      payload: { checkin_id: newCheckin.id },
+      payload_json: { checkin_id: newCheckin.id },
       created_at: new Date().toISOString(),
     });
 
