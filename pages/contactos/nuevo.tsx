@@ -27,7 +27,7 @@ export default function NuevoContactoPage() {
 
       const data: ContactCreate = {
         name: name,
-        channel: "telegram",
+        channel: "TELEGRAM",
         telegram_chat_id: null,  // Se vincula cuando el conductor hace /start
         phone_e164: normalizedPhone,
       };

@@ -134,7 +134,7 @@ export interface Contact {
   id: string;
   tenant_id: string;
   name: string;
-  channel: 'telegram' | 'sms' | 'whatsapp';
+  channel: 'TELEGRAM' | 'WHATSAPP';
   telegram_chat_id: string | null;
   phone_e164: string | null;
   created_at: string;
@@ -160,7 +160,7 @@ export interface TrackingCheckin {
 
 export interface ContactCreate {
   name: string;
-  channel: 'telegram' | 'sms' | 'whatsapp';
+  channel: 'TELEGRAM' | 'WHATSAPP';
   telegram_chat_id?: string | null;
   phone_e164?: string | null;
 }
@@ -236,7 +236,7 @@ const demoContacts: Contact[] = [
     id: 'contact-001',
     tenant_id: DEMO_TENANT_ID,
     name: 'Carlos Rodríguez',
-    channel: 'telegram',
+    channel: 'TELEGRAM',
     telegram_chat_id: '123456789',
     phone_e164: null,
     created_at: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
@@ -245,7 +245,7 @@ const demoContacts: Contact[] = [
     id: 'contact-002',
     tenant_id: DEMO_TENANT_ID,
     name: 'María González',
-    channel: 'whatsapp',
+    channel: 'WHATSAPP',
     telegram_chat_id: null,
     phone_e164: '+34612345678',
     created_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
@@ -254,7 +254,7 @@ const demoContacts: Contact[] = [
     id: 'contact-003',
     tenant_id: DEMO_TENANT_ID,
     name: 'Pedro Sánchez',
-    channel: 'sms',
+    channel: 'TELEGRAM',
     telegram_chat_id: null,
     phone_e164: '+34698765432',
     created_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
