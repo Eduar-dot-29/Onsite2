@@ -8,6 +8,13 @@ import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
 const statusConfig: Record<string, { label: string; color: string }> = {
+  CREATED: { label: "Creado", color: "text-slate-400" },
+  ASSIGNED: { label: "Asignado", color: "text-warning" },
+  IN_TRANSIT: { label: "En Tránsito", color: "text-primary" },
+  INCIDENT: { label: "Incidencia", color: "text-orange-400" },
+  DELAYED: { label: "Retrasado", color: "text-destructive" },
+  DELIVERED: { label: "Entregado", color: "text-success" },
+  // Fallback for old lowercase values
   pending: { label: "Pendiente", color: "text-warning" },
   in_transit: { label: "En Tránsito", color: "text-primary" },
   delivered: { label: "Entregado", color: "text-success" },
@@ -42,9 +49,9 @@ export default function DashboardPage() {
 
   const stats = {
     total: shipments.length,
-    inTransit: shipments.filter((s) => s.status === "in_transit").length,
-    delayed: shipments.filter((s) => s.status === "delayed").length,
-    delivered: shipments.filter((s) => s.status === "delivered").length,
+    inTransit: shipments.filter((s) => ['IN_TRANSIT', 'ASSIGNED', 'in_transit', 'pending'].includes(s.status)).length,
+    delayed: shipments.filter((s) => ['DELAYED', 'INCIDENT', 'delayed'].includes(s.status)).length,
+    delivered: shipments.filter((s) => ['DELIVERED', 'delivered'].includes(s.status)).length,
   };
 
   const recentShipments = shipments.slice(0, 5);
@@ -60,7 +67,7 @@ export default function DashboardPage() {
             </p>
           </header>
 
-          {/* Stats */}
+          {/* Stats - Clickable to filter */}
           <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <StatCard
               label="Total Envíos"
@@ -68,6 +75,7 @@ export default function DashboardPage() {
               icon={Package}
               color="text-white"
               loading={loading}
+              href="/envios"
             />
             <StatCard
               label="En Tránsito"
@@ -75,6 +83,7 @@ export default function DashboardPage() {
               icon={Truck}
               color="text-primary"
               loading={loading}
+              href="/envios?status=IN_TRANSIT"
             />
             <StatCard
               label="Retrasados"
@@ -82,6 +91,7 @@ export default function DashboardPage() {
               icon={AlertTriangle}
               color="text-destructive"
               loading={loading}
+              href="/envios?status=DELAYED"
             />
             <StatCard
               label="Entregados"
@@ -89,6 +99,7 @@ export default function DashboardPage() {
               icon={CheckCircle}
               color="text-success"
               loading={loading}
+              href="/envios?status=DELIVERED"
             />
           </section>
 
@@ -122,7 +133,7 @@ export default function DashboardPage() {
             ) : (
               <div className="divide-y divide-border">
                 {recentShipments.map((shipment) => {
-                  const status = statusConfig[shipment.status] || statusConfig.pending;
+                  const status = statusConfig[shipment.status] || statusConfig.CREATED;
                   return (
                     <Link
                       key={shipment.id}
@@ -159,15 +170,20 @@ function StatCard({
   icon: Icon,
   color,
   loading,
+  href,
 }: {
   label: string;
   value: number;
   icon: React.ElementType;
   color: string;
   loading: boolean;
+  href: string;
 }) {
   return (
-    <div className="rounded-xl border border-border bg-card p-5">
+    <Link 
+      href={href}
+      className="rounded-xl border border-border bg-card p-5 hover:bg-white/5 transition cursor-pointer"
+    >
       <div className="flex items-center justify-between">
         <p className="text-xs uppercase tracking-wide text-slate-400">{label}</p>
         <Icon className={`h-5 w-5 ${color}`} />
@@ -175,7 +191,7 @@ function StatCard({
       <p className={`mt-3 text-3xl font-semibold ${color}`}>
         {loading ? "—" : value}
       </p>
-      <p className="mt-2 text-xs text-slate-500">Actualizado ahora</p>
-    </div>
+      <p className="mt-2 text-xs text-slate-500">Click para filtrar</p>
+    </Link>
   );
 }

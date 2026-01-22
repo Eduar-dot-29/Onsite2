@@ -74,6 +74,38 @@ class TelegramProvider(MessagingProvider):
         message = await self._bot.send_message(chat_id=contact.telegram_chat_id, text=text)
         return str(message.message_id)
 
+    async def answer_callback(self, callback_query_id: str, text: str | None = None) -> bool:
+        """Answer a callback query to remove the loading state on the button."""
+        if not self._bot:
+            return False
+        try:
+            await self._bot.answer_callback_query(callback_query_id=callback_query_id, text=text)
+            return True
+        except Exception:
+            return False
+
+    async def remove_inline_keyboard(self, chat_id: str, message_id: str, new_text: str | None = None) -> bool:
+        """Remove inline keyboard from a message (make buttons one-shot)."""
+        if not self._bot:
+            return False
+        try:
+            if new_text:
+                await self._bot.edit_message_text(
+                    chat_id=chat_id,
+                    message_id=int(message_id),
+                    text=new_text,
+                    reply_markup=None
+                )
+            else:
+                await self._bot.edit_message_reply_markup(
+                    chat_id=chat_id,
+                    message_id=int(message_id),
+                    reply_markup=None
+                )
+            return True
+        except Exception:
+            return False
+
     async def send_welcome_message(self, chat_id: str, driver_name: str) -> str | None:
         """Send a welcome message when a driver registers via /start."""
         if not self._bot:
@@ -94,6 +126,7 @@ class TelegramProvider(MessagingProvider):
             data = callback.get("data")
             message = callback.get("message", {})
             chat_id = message.get("chat", {}).get("id")
+            callback_query_id = callback.get("id")
             timestamp = datetime.fromtimestamp(callback.get("date", 0), tz=timezone.utc)
             if not data or chat_id is None:
                 return None
@@ -108,6 +141,7 @@ class TelegramProvider(MessagingProvider):
                 shipment_id=shipment_id,
                 checkin_id=checkin_id,
                 timestamp=timestamp,
+                callback_query_id=callback_query_id,
             )
 
         if "message" in payload:

@@ -463,11 +463,18 @@ class ApiClient {
   }
 
   // Shipments
-  async getShipments(): Promise<Shipment[]> {
+  async getShipments(statusFilter?: 'IN_TRANSIT' | 'DELAYED' | 'DELIVERED'): Promise<Shipment[]> {
     if (DEMO_MODE) {
-      return this.demoShipments;
+      if (!statusFilter) return this.demoShipments;
+      return this.demoShipments.filter(s => {
+        if (statusFilter === 'IN_TRANSIT') return s.status === 'in_transit' || s.status === 'pending';
+        if (statusFilter === 'DELAYED') return s.status === 'delayed';
+        if (statusFilter === 'DELIVERED') return s.status === 'delivered';
+        return true;
+      });
     }
-    return this.request<Shipment[]>('/shipments');
+    const url = statusFilter ? `/shipments?status=${statusFilter}` : '/shipments';
+    return this.request<Shipment[]>(url);
   }
 
   async getShipment(id: string): Promise<Shipment> {
@@ -517,6 +524,51 @@ class ApiClient {
     return this.request<Shipment>(`/shipments/${shipmentId}/assign`, {
       method: 'POST',
       body: JSON.stringify({ contact_id: contactId }),
+    });
+  }
+
+  async updateShipment(shipmentId: string, data: Partial<ShipmentCreate>): Promise<Shipment> {
+    if (DEMO_MODE) {
+      const shipment = this.demoShipments.find(s => s.id === shipmentId);
+      if (!shipment) throw new Error('Envío no encontrado');
+      Object.assign(shipment, data);
+      if (data.planned_departure_at && data.eta_hours) {
+        shipment.estimated_arrival_at = new Date(
+          new Date(data.planned_departure_at).getTime() + data.eta_hours * 60 * 60 * 1000
+        ).toISOString();
+      }
+      this.saveDemoData();
+      return shipment;
+    }
+    return this.request<Shipment>(`/shipments/${shipmentId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteShipment(shipmentId: string): Promise<void> {
+    if (DEMO_MODE) {
+      const index = this.demoShipments.findIndex(s => s.id === shipmentId);
+      if (index === -1) throw new Error('Envío no encontrado');
+      this.demoShipments.splice(index, 1);
+      this.saveDemoData();
+      return;
+    }
+    await this.request<void>(`/shipments/${shipmentId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async markDelivered(shipmentId: string): Promise<Shipment> {
+    if (DEMO_MODE) {
+      const shipment = this.demoShipments.find(s => s.id === shipmentId);
+      if (!shipment) throw new Error('Envío no encontrado');
+      shipment.status = 'delivered';
+      this.saveDemoData();
+      return shipment;
+    }
+    return this.request<Shipment>(`/shipments/${shipmentId}/deliver`, {
+      method: 'POST',
     });
   }
 

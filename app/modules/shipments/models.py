@@ -50,5 +50,9 @@ class Shipment(UUIDMixin, Base):
     created_at: Mapped[DateTime] = mapped_column(
         DateTime(timezone=True), default=utcnow, nullable=False
     )
+    # Soft delete
+    deleted_at: Mapped[DateTime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True, default=None
+    )
 
     assigned_contact = relationship("Contact")

@@ -18,6 +18,7 @@ class ShipmentStatus(str, Enum):
     ASSIGNED = "ASSIGNED"
     IN_TRANSIT = "IN_TRANSIT"
     INCIDENT = "INCIDENT"
+    DELAYED = "DELAYED"
     DELIVERED = "DELIVERED"
 
 

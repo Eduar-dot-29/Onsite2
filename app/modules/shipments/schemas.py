@@ -41,6 +41,19 @@ class ShipmentAssign(BaseModel):
     contact_id: UUID
 
 
+class ShipmentUpdate(BaseModel):
+    """Schema for updating a shipment. All fields are optional."""
+    customer_name: str | None = None
+    origin_text: str | None = None
+    destination_text: str | None = None
+    destination_lat: float | None = None
+    destination_lon: float | None = None
+    planned_departure_at: datetime | None = None
+    eta_hours: int | None = None
+    status: ShipmentStatus | None = None
+    assigned_contact_id: UUID | None = None
+
+
 class ShipmentOut(BaseModel):
     id: UUID
     tenant_id: UUID
@@ -55,5 +68,6 @@ class ShipmentOut(BaseModel):
     status: ShipmentStatus
     assigned_contact_id: UUID | None
     created_at: datetime
+    deleted_at: datetime | None = None
 
     model_config = {"from_attributes": True}

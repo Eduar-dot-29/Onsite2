@@ -347,6 +347,34 @@ def find_incident_waiting_location(
     )
 
 
+def get_checkin(session: Session, tenant_id, checkin_id) -> models.TrackingCheckin | None:
+    """Get a checkin by ID."""
+    return (
+        session.query(models.TrackingCheckin)
+        .filter(
+            models.TrackingCheckin.id == checkin_id,
+            models.TrackingCheckin.tenant_id == tenant_id,
+        )
+        .one_or_none()
+    )
+
+
+def find_incident_by_shipment(
+    session: Session, tenant_id, shipment_id, contact_id
+) -> models.ShipmentIncidentState | None:
+    """Find an active incident state for a shipment and contact."""
+    return (
+        session.query(models.ShipmentIncidentState)
+        .filter(
+            models.ShipmentIncidentState.tenant_id == tenant_id,
+            models.ShipmentIncidentState.shipment_id == shipment_id,
+            models.ShipmentIncidentState.contact_id == contact_id,
+        )
+        .order_by(models.ShipmentIncidentState.updated_at.desc())
+        .first()
+    )
+
+
 def find_contact_by_channel(session: Session, tenant_id, channel, external_id: str):
     query = session.query(shipment_models.Contact).filter(
         shipment_models.Contact.tenant_id == tenant_id,
