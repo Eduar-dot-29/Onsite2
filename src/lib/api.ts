@@ -2,8 +2,9 @@
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://on-site-on-transit.onrender.com';
 
-// Demo mode - set to false to use real backend
-const DEMO_MODE = false;
+// Demo mode - set to true for Vercel deployments without backend
+// Set NEXT_PUBLIC_DEMO_MODE=false in environment to use real backend
+const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE !== 'false';
 
 interface TokenResponse {
   access_token: string;
@@ -579,13 +580,18 @@ class ApiClient {
   // Shipments
   async getShipments(statusFilter?: 'IN_TRANSIT' | 'DELAYED' | 'DELIVERED'): Promise<Shipment[]> {
     if (DEMO_MODE) {
-      if (!statusFilter) return this.demoShipments;
-      return this.demoShipments.filter(s => {
-        if (statusFilter === 'IN_TRANSIT') return s.status === 'IN_TRANSIT' || s.status === 'ASSIGNED';
-        if (statusFilter === 'DELAYED') return s.status === 'DELAYED' || s.status === 'INCIDENT';
-        if (statusFilter === 'DELIVERED') return s.status === 'DELIVERED';
-        return true;
-      });
+      // Filter out soft-deleted shipments
+      let filtered = this.demoShipments.filter(s => !s.deleted_at);
+      
+      if (statusFilter) {
+        filtered = filtered.filter(s => {
+          if (statusFilter === 'IN_TRANSIT') return s.status === 'IN_TRANSIT' || s.status === 'ASSIGNED';
+          if (statusFilter === 'DELAYED') return s.status === 'DELAYED' || s.status === 'INCIDENT';
+          if (statusFilter === 'DELIVERED') return s.status === 'DELIVERED';
+          return true;
+        });
+      }
+      return filtered;
     }
     const url = statusFilter ? `/shipments?status=${statusFilter}` : '/shipments';
     return this.request<Shipment[]>(url);
@@ -626,6 +632,10 @@ class ApiClient {
         deleted_at: null,
       };
       this.demoShipments.unshift(newShipment);
+      
+      // Generate check-ins for the new shipment
+      this.regenerateCheckins(newShipment);
+      
       this.saveDemoData();
       return newShipment;
     }
@@ -653,19 +663,38 @@ class ApiClient {
     if (DEMO_MODE) {
       const shipment = this.demoShipments.find(s => s.id === shipmentId);
       if (!shipment) throw new Error('Envío no encontrado');
-      if (data.customer_name) shipment.customer_name = data.customer_name;
-      if (data.origin_text) shipment.origin_text = data.origin_text;
-      if (data.destination_text) shipment.destination_text = data.destination_text;
+      
+      // Track if time-related fields changed for check-in rescheduling
+      const timeChanged = data.departure_at_local || data.estimated_duration_minutes || 
+                          data.checkin_plan_mode || data.checkin_interval_minutes || data.checkin_count;
+      
+      // Update basic fields
+      if (data.customer_name !== undefined) shipment.customer_name = data.customer_name;
+      if (data.origin_text !== undefined) shipment.origin_text = data.origin_text;
+      if (data.destination_text !== undefined) shipment.destination_text = data.destination_text;
+      if (data.timezone !== undefined) shipment.timezone = data.timezone;
+      
+      // Update time-related fields
       if (data.departure_at_local) {
         shipment.departure_at_utc = new Date(data.departure_at_local).toISOString();
       }
-      if (data.estimated_duration_minutes) {
+      if (data.estimated_duration_minutes !== undefined) {
         shipment.estimated_duration_minutes = data.estimated_duration_minutes;
         shipment.eta_at_utc = new Date(
           new Date(shipment.departure_at_utc).getTime() + data.estimated_duration_minutes * 60 * 1000
         ).toISOString();
       }
-      if (data.timezone) shipment.timezone = data.timezone;
+      
+      // Update check-in plan fields
+      if (data.checkin_plan_mode !== undefined) shipment.checkin_plan_mode = data.checkin_plan_mode;
+      if (data.checkin_interval_minutes !== undefined) shipment.checkin_interval_minutes = data.checkin_interval_minutes;
+      if (data.checkin_count !== undefined) shipment.checkin_count = data.checkin_count;
+      
+      // Regenerate check-ins if time/plan changed
+      if (timeChanged) {
+        this.regenerateCheckins(shipment);
+      }
+      
       this.saveDemoData();
       return shipment;
     }
@@ -675,11 +704,100 @@ class ApiClient {
     });
   }
 
+  // Helper to regenerate check-ins in demo mode
+  private regenerateCheckins(shipment: Shipment) {
+    const savedCheckins = typeof window !== 'undefined' ? localStorage.getItem('demo_checkins') : null;
+    const checkins: Record<string, TrackingCheckin[]> = savedCheckins ? JSON.parse(savedCheckins) : {};
+    
+    // Cancel existing pending checkins
+    if (checkins[shipment.id]) {
+      checkins[shipment.id] = checkins[shipment.id].map(c => {
+        if (c.status === 'PENDING') {
+          return { ...c, status: 'CANCELLED' as const };
+        }
+        return c;
+      });
+    } else {
+      checkins[shipment.id] = [];
+    }
+    
+    // Generate new schedule
+    const schedule = this.generateCheckinSchedule(shipment);
+    const newCheckins: TrackingCheckin[] = schedule.map((scheduledFor, idx) => ({
+      id: `chk-${shipment.id}-${Date.now()}-${idx}`,
+      shipment_id: shipment.id,
+      scheduled_for_utc: scheduledFor,
+      status: 'PENDING' as const,
+      locked_at_utc: null,
+      sent_at_utc: null,
+      answered_at_utc: null,
+      attempts: 0,
+      last_error: null,
+      created_at: new Date().toISOString(),
+    }));
+    
+    // Add new checkins (keep cancelled/sent ones for history)
+    checkins[shipment.id] = [...checkins[shipment.id].filter(c => c.status !== 'PENDING'), ...newCheckins];
+    
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('demo_checkins', JSON.stringify(checkins));
+    }
+  }
+
+  // Generate check-in schedule based on shipment plan
+  private generateCheckinSchedule(shipment: Shipment): string[] {
+    const departure = new Date(shipment.departure_at_utc).getTime();
+    const eta = new Date(shipment.eta_at_utc).getTime();
+    const now = Date.now();
+    const schedule: string[] = [];
+    
+    if (shipment.checkin_plan_mode === 'INTERVAL' && shipment.checkin_interval_minutes) {
+      const intervalMs = shipment.checkin_interval_minutes * 60 * 1000;
+      let current = departure + intervalMs; // Skip the departure itself
+      
+      while (current < eta && schedule.length < 200) {
+        if (current > now) { // Don't schedule in the past
+          schedule.push(new Date(current).toISOString());
+        }
+        current += intervalMs;
+      }
+    } else if (shipment.checkin_plan_mode === 'MILESTONE' && shipment.checkin_count) {
+      const count = Math.min(shipment.checkin_count, 200);
+      const duration = eta - departure;
+      
+      for (let i = 1; i <= count; i++) {
+        // Distribute uniformly: 1/N+1, 2/N+1, ..., N/N+1
+        const fraction = i / (count + 1);
+        const checkTime = departure + duration * fraction;
+        if (checkTime > now) { // Don't schedule in the past
+          schedule.push(new Date(checkTime).toISOString());
+        }
+      }
+    }
+    
+    return schedule;
+  }
+
   async deleteShipment(shipmentId: string): Promise<void> {
     if (DEMO_MODE) {
-      const index = this.demoShipments.findIndex(s => s.id === shipmentId);
-      if (index === -1) throw new Error('Envío no encontrado');
-      this.demoShipments.splice(index, 1);
+      const shipment = this.demoShipments.find(s => s.id === shipmentId);
+      if (!shipment) throw new Error('Envío no encontrado');
+      
+      // Soft delete: set deleted_at
+      shipment.deleted_at = new Date().toISOString();
+      
+      // Cancel pending check-ins
+      const savedCheckins = typeof window !== 'undefined' ? localStorage.getItem('demo_checkins') : null;
+      if (savedCheckins) {
+        const checkins: Record<string, TrackingCheckin[]> = JSON.parse(savedCheckins);
+        if (checkins[shipmentId]) {
+          checkins[shipmentId] = checkins[shipmentId].map(c => 
+            c.status === 'PENDING' ? { ...c, status: 'CANCELLED' as const } : c
+          );
+          localStorage.setItem('demo_checkins', JSON.stringify(checkins));
+        }
+      }
+      
       this.saveDemoData();
       return;
     }
