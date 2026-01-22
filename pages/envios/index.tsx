@@ -74,7 +74,7 @@ export default function EnviosPage() {
       setShipments(shipments.filter(s => s.id !== shipmentId));
       setDeleteConfirm(null);
     } catch (err) {
-      setError(extractErrorMessage(err));
+      setError(err instanceof Error ? err.message : "Error al eliminar envío");
     }
   };
 

@@ -3,7 +3,7 @@ import { useRouter } from "next/router";
 import Link from "next/link";
 import { ArrowLeft, Save } from "lucide-react";
 import AppLayout from "@/components/AppLayout";
-import { api, Shipment, Contact, extractErrorMessage } from "@/lib/api";
+import { api, Contact } from "@/lib/api";
 import { format } from "date-fns";
 
 export default function EditarEnvioPage() {
@@ -51,7 +51,7 @@ export default function EditarEnvioPage() {
       setAssignedContactId(shipment.assigned_contact_id || "");
       setContacts(contactList);
     } catch (err) {
-      setError(extractErrorMessage(err));
+      setError(err instanceof Error ? err.message : "Error al cargar datos");
     } finally {
       setLoading(false);
     }
@@ -73,7 +73,7 @@ export default function EditarEnvioPage() {
 
       router.push(`/envios/${id}`);
     } catch (err) {
-      setError(extractErrorMessage(err));
+      setError(err instanceof Error ? err.message : "Error al guardar cambios");
       setSaving(false);
     }
   };
