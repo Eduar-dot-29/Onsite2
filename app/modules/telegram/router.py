@@ -35,7 +35,7 @@ async def telegram_webhook(
 
         logger.info("telegram.webhook.message_parsed", extra={"type": message.type, "action": str(message.action)})
 
-        # Handle /start command - auto-register driver
+        # Handle /start command - request phone for linking or auto-register
         if message.type == MessageType.COMMAND and message.action == MessageAction.START:
             # Verify tenant exists
             tenant = session.query(Tenant).filter(Tenant.id == tenant_id).one_or_none()
@@ -43,37 +43,99 @@ async def telegram_webhook(
                 logger.warning("telegram.start.tenant_not_found", extra={"tenant_id": str(tenant_id)})
                 return {"ok": True}
 
-            contact, is_new = tracking_service.find_or_create_telegram_contact(
-                session,
-                tenant_id=tenant_id,
-                telegram_chat_id=message.external_user_id,
-                first_name=message.user_first_name,
-                last_name=message.user_last_name,
-                username=message.username,
+            # Check if already linked by telegram_chat_id
+            existing_contact = tracking_service.find_contact_by_channel(
+                session, tenant_id=tenant_id, channel=ContactChannel.TELEGRAM, external_id=message.external_user_id
             )
-            session.commit()
-
-            # Build driver name for welcome message
-            driver_name = message.user_first_name or contact.name
-
-            if is_new:
-                logger.info(
-                    "telegram.driver.registered",
-                    extra={
-                        "contact_id": str(contact.id),
-                        "telegram_chat_id": message.external_user_id,
-                        "name": contact.name,
-                    }
-                )
-                await provider.send_welcome_message(message.external_user_id, driver_name)
-            else:
-                # Driver already registered, send a friendly reminder
+            
+            driver_name = message.user_first_name or "Conductor"
+            
+            if existing_contact:
+                # Already linked, send reminder
                 await provider.send_text(
-                    contact,
+                    existing_contact,
                     f"¡Hola {driver_name}! Ya estás registrado como conductor. "
                     "Recibirás mensajes de seguimiento cuando te asignen un envío."
                 )
+            else:
+                # Not linked yet - request phone to link with existing contact
+                await provider.send_request_phone(message.external_user_id, driver_name)
+                logger.info(
+                    "telegram.start.requesting_phone",
+                    extra={
+                        "telegram_chat_id": message.external_user_id,
+                    }
+                )
 
+            return {"ok": True}
+
+        # Handle shared phone contact - link to existing contact
+        if message.type == MessageType.CONTACT and message.shared_phone:
+            tenant = session.query(Tenant).filter(Tenant.id == tenant_id).one_or_none()
+            if not tenant:
+                return {"ok": True}
+
+            driver_name = message.user_first_name or "Conductor"
+            
+            # Find contact by phone number
+            contact = tracking_service.find_contact_by_phone(
+                session, tenant_id=tenant_id, phone_e164=message.shared_phone
+            )
+            
+            if contact:
+                # Link the telegram_chat_id to this contact
+                linked = tracking_service.link_telegram_chat_to_contact(
+                    session, contact, message.external_user_id
+                )
+                session.commit()
+                
+                if linked:
+                    logger.info(
+                        "telegram.driver.phone_linked",
+                        extra={
+                            "contact_id": str(contact.id),
+                            "telegram_chat_id": message.external_user_id,
+                            "phone": message.shared_phone,
+                        }
+                    )
+                    await provider.send_phone_linked_message(message.external_user_id, contact.name)
+                else:
+                    # Already linked to different account
+                    await provider.send_text(
+                        contact,
+                        f"⚠️ Este número ya está vinculado a otra cuenta de Telegram."
+                    )
+            else:
+                # Phone not found - offer to create new contact
+                logger.info(
+                    "telegram.driver.phone_not_found",
+                    extra={
+                        "telegram_chat_id": message.external_user_id,
+                        "phone": message.shared_phone,
+                    }
+                )
+                # Create new contact with phone
+                contact, _ = tracking_service.find_or_create_telegram_contact(
+                    session,
+                    tenant_id=tenant_id,
+                    telegram_chat_id=message.external_user_id,
+                    first_name=message.user_first_name,
+                    last_name=message.user_last_name,
+                    username=message.username,
+                )
+                # Also store the phone number
+                contact.phone_e164 = message.shared_phone
+                session.commit()
+                
+                logger.info(
+                    "telegram.driver.created_with_phone",
+                    extra={
+                        "contact_id": str(contact.id),
+                        "phone": message.shared_phone,
+                    }
+                )
+                await provider.send_welcome_message(message.external_user_id, driver_name)
+            
             return {"ok": True}
 
         # For other message types, find contact by telegram chat_id

@@ -69,6 +69,7 @@ class MessageType(str, Enum):
     LOCATION = "LOCATION"
     TEXT = "TEXT"
     COMMAND = "COMMAND"
+    CONTACT = "CONTACT"  # When user shares their phone number
 
 
 class MessageAction(str, Enum):

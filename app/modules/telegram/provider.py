@@ -120,6 +120,49 @@ class TelegramProvider(MessagingProvider):
         message = await self._bot.send_message(chat_id=chat_id, text=text)
         return str(message.message_id)
 
+    async def send_request_phone(self, chat_id: str, driver_name: str) -> str | None:
+        """Request phone number sharing to link driver with existing contact."""
+        if not self._bot:
+            return None
+        text = (
+            f"¡Hola {driver_name}! 👋\n\n"
+            "Para vincularte como conductor, necesito confirmar tu número de teléfono.\n\n"
+            "Pulsa el botón de abajo para compartir tu teléfono de forma segura."
+        )
+        keyboard = ReplyKeyboardMarkup(
+            [[KeyboardButton("📱 Compartir mi teléfono", request_contact=True)]],
+            resize_keyboard=True,
+            one_time_keyboard=True,
+        )
+        message = await self._bot.send_message(chat_id=chat_id, text=text, reply_markup=keyboard)
+        return str(message.message_id)
+
+    async def send_phone_linked_message(self, chat_id: str, driver_name: str) -> str | None:
+        """Confirm phone was linked successfully."""
+        if not self._bot:
+            return None
+        from telegram import ReplyKeyboardRemove
+        text = (
+            f"✅ ¡Perfecto {driver_name}!\n\n"
+            "Tu teléfono ha sido vinculado correctamente.\n\n"
+            "A partir de ahora recibirás mensajes automáticos de seguimiento "
+            "cuando te asignen un envío. ¡Buen viaje! 🚚"
+        )
+        message = await self._bot.send_message(chat_id=chat_id, text=text, reply_markup=ReplyKeyboardRemove())
+        return str(message.message_id)
+
+    async def send_phone_not_found_message(self, chat_id: str) -> str | None:
+        """Notify that phone was not found in system."""
+        if not self._bot:
+            return None
+        from telegram import ReplyKeyboardRemove
+        text = (
+            "❌ No encontramos tu número de teléfono registrado en el sistema.\n\n"
+            "Por favor, contacta con tu empresa para que te den de alta como conductor."
+        )
+        message = await self._bot.send_message(chat_id=chat_id, text=text, reply_markup=ReplyKeyboardRemove())
+        return str(message.message_id)
+
     def parse_incoming(self, payload: dict) -> NormalizedMessage | None:
         if "callback_query" in payload:
             callback = payload["callback_query"]
@@ -156,6 +199,24 @@ class TelegramProvider(MessagingProvider):
             user_first_name = from_user.get("first_name")
             user_last_name = from_user.get("last_name")
             username = from_user.get("username")
+
+            # Handle shared contact (phone number)
+            if "contact" in message:
+                contact = message["contact"]
+                phone_number = contact.get("phone_number")
+                # Normalize phone number to E.164 format
+                if phone_number and not phone_number.startswith("+"):
+                    phone_number = "+" + phone_number
+                return NormalizedMessage(
+                    type=MessageType.CONTACT,
+                    external_user_id=str(chat_id),
+                    message_id=str(message.get("message_id")) if message.get("message_id") else None,
+                    shared_phone=phone_number,
+                    timestamp=timestamp,
+                    user_first_name=contact.get("first_name") or user_first_name,
+                    user_last_name=contact.get("last_name") or user_last_name,
+                    username=username,
+                )
 
             if "location" in message:
                 location = message["location"]

@@ -387,6 +387,38 @@ def find_contact_by_channel(session: Session, tenant_id, channel, external_id: s
     return query.one_or_none()
 
 
+def find_contact_by_phone(session: Session, tenant_id, phone_e164: str):
+    """Find a contact by phone number (for linking Telegram accounts)."""
+    # Normalize phone number for comparison
+    phone_normalized = phone_e164.strip()
+    if not phone_normalized.startswith("+"):
+        phone_normalized = "+" + phone_normalized
+    
+    return session.query(shipment_models.Contact).filter(
+        shipment_models.Contact.tenant_id == tenant_id,
+        shipment_models.Contact.phone_e164 == phone_normalized,
+    ).one_or_none()
+
+
+def link_telegram_chat_to_contact(
+    session: Session,
+    contact,
+    telegram_chat_id: str,
+) -> bool:
+    """
+    Link a Telegram chat_id to an existing contact.
+    
+    Returns True if linked successfully, False if contact already had a different chat_id.
+    """
+    if contact.telegram_chat_id and contact.telegram_chat_id != telegram_chat_id:
+        # Already linked to a different Telegram account
+        return False
+    
+    contact.telegram_chat_id = telegram_chat_id
+    session.add(contact)
+    return True
+
+
 def find_or_create_telegram_contact(
     session: Session,
     tenant_id,

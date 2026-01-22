@@ -30,3 +30,5 @@ class NormalizedMessage(BaseModel):
     username: str | None = None
     # Callback query info (for answering and removing keyboards)
     callback_query_id: str | None = None
+    # Shared contact phone (for phone-based linking)
+    shared_phone: str | None = None
