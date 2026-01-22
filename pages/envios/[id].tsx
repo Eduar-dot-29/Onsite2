@@ -232,18 +232,18 @@ export default function EnvioDetailPage() {
                     <div className="flex items-center justify-between">
                       <span className="text-slate-400">Salida</span>
                       <span className="text-white">
-                        {format(new Date(shipment.departure_at_utc), "dd MMM, HH:mm", { locale: es })}
+                        {shipment.departure_at_utc ? format(new Date(shipment.departure_at_utc), "dd MMM, HH:mm", { locale: es }) : 'N/A'}
                       </span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-slate-400">ETA</span>
                       <span className="text-white font-medium">
-                        {format(new Date(shipment.eta_at_utc), "dd MMM, HH:mm", { locale: es })}
+                        {shipment.eta_at_utc ? format(new Date(shipment.eta_at_utc), "dd MMM, HH:mm", { locale: es }) : 'N/A'}
                       </span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-slate-400">Duración</span>
-                      <span className="text-white">{shipment.eta_hours}h</span>
+                      <span className="text-white">{shipment.estimated_duration_minutes ? Math.round(shipment.estimated_duration_minutes / 60) : (shipment as any).eta_hours || 0}h</span>
                     </div>
                   </div>
                 </div>
@@ -381,7 +381,11 @@ export default function EnvioDetailPage() {
                           {checkins.map((checkin) => (
                             <div key={checkin.id} className="flex items-center justify-between text-xs p-2 rounded bg-white/5">
                               <span className="text-slate-400">
-                                {format(new Date(checkin.scheduled_for_utc), "dd/MM HH:mm", { locale: es })}
+                                {checkin.scheduled_for_utc 
+                                  ? format(new Date(checkin.scheduled_for_utc), "dd/MM HH:mm", { locale: es })
+                                  : (checkin as any).due_at 
+                                    ? format(new Date((checkin as any).due_at), "dd/MM HH:mm", { locale: es })
+                                    : 'N/A'}
                               </span>
                               <CheckinStatusBadge status={checkin.status} />
                             </div>

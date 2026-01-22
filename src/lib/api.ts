@@ -391,9 +391,57 @@ class ApiClient {
       // Load demo data from localStorage if exists
       const savedShipments = localStorage.getItem('demo_shipments');
       const savedContacts = localStorage.getItem('demo_contacts');
-      if (savedShipments) this.demoShipments = JSON.parse(savedShipments);
+      if (savedShipments) {
+        const parsed = JSON.parse(savedShipments);
+        // Migrate old shipment data to new format
+        this.demoShipments = parsed.map((s: Shipment & { planned_departure_at?: string; estimated_arrival_at?: string; eta_hours?: number }) => this.migrateShipment(s));
+        // Save migrated data
+        this.saveDemoData();
+      }
       if (savedContacts) this.demoContacts = JSON.parse(savedContacts);
     }
+  }
+
+  // Migrate old shipment format to new UTC-based format
+  private migrateShipment(s: Shipment & { planned_departure_at?: string; estimated_arrival_at?: string; eta_hours?: number }): Shipment {
+    // If already has new fields, return as-is
+    if (s.departure_at_utc && s.eta_at_utc) {
+      return s;
+    }
+    
+    // Convert from old format
+    const departure = s.departure_at_utc || s.planned_departure_at || new Date().toISOString();
+    const eta = s.eta_at_utc || s.estimated_arrival_at || new Date(Date.now() + 4 * 60 * 60 * 1000).toISOString();
+    const durationMinutes = s.estimated_duration_minutes || (s.eta_hours ? s.eta_hours * 60 : 240);
+    
+    // Map old status values to new uppercase format
+    let status = s.status;
+    const statusMap: Record<string, Shipment['status']> = {
+      'pending': 'ASSIGNED',
+      'in_transit': 'IN_TRANSIT',
+      'delivered': 'DELIVERED',
+      'delayed': 'DELAYED',
+      'incident': 'INCIDENT',
+      'created': 'CREATED',
+      'assigned': 'ASSIGNED',
+    };
+    if (statusMap[status.toLowerCase()]) {
+      status = statusMap[status.toLowerCase()];
+    }
+    
+    return {
+      ...s,
+      departure_at_utc: departure,
+      eta_at_utc: eta,
+      timezone: s.timezone || 'Europe/Madrid',
+      estimated_duration_minutes: durationMinutes,
+      checkin_plan_mode: s.checkin_plan_mode || 'INTERVAL',
+      checkin_interval_minutes: s.checkin_interval_minutes ?? 30,
+      checkin_count: s.checkin_count ?? null,
+      delivered_at_utc: s.delivered_at_utc || null,
+      deleted_at: s.deleted_at || null,
+      status,
+    };
   }
 
   private saveDemoData() {

@@ -283,7 +283,7 @@ function ShipmentRow({ shipment, onDelete }: { shipment: Shipment; onDelete: () 
       <div className="flex items-center gap-4">
         <div className="text-right text-sm">
         <p className="text-slate-300">
-          ETA: {format(new Date(shipment.eta_at_utc), "dd MMM, HH:mm", { locale: es })}
+          ETA: {shipment.eta_at_utc ? format(new Date(shipment.eta_at_utc), "dd MMM, HH:mm", { locale: es }) : 'N/A'}
         </p>
           <p className="text-xs text-slate-500">
             Creado: {format(new Date(shipment.created_at), "dd/MM/yyyy", { locale: es })}
