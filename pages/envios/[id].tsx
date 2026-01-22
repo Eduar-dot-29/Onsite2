@@ -23,6 +23,14 @@ import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
 const statusConfig: Record<string, { label: string; color: string; bg: string }> = {
+  // Uppercase (new format)
+  CREATED: { label: "Pendiente", color: "text-warning", bg: "bg-warning/10" },
+  ASSIGNED: { label: "Asignado", color: "text-blue-400", bg: "bg-blue-400/10" },
+  IN_TRANSIT: { label: "En Tránsito", color: "text-primary", bg: "bg-primary/10" },
+  INCIDENT: { label: "Incidencia", color: "text-orange-400", bg: "bg-orange-400/10" },
+  DELAYED: { label: "Retrasado", color: "text-destructive", bg: "bg-destructive/10" },
+  DELIVERED: { label: "Entregado", color: "text-success", bg: "bg-success/10" },
+  // Lowercase fallbacks (old format)
   pending: { label: "Pendiente", color: "text-warning", bg: "bg-warning/10" },
   in_transit: { label: "En Tránsito", color: "text-primary", bg: "bg-primary/10" },
   delivered: { label: "Entregado", color: "text-success", bg: "bg-success/10" },
@@ -232,18 +240,18 @@ export default function EnvioDetailPage() {
                     <div className="flex items-center justify-between">
                       <span className="text-slate-400">Salida</span>
                       <span className="text-white">
-                        {format(new Date(shipment.planned_departure_at), "dd MMM, HH:mm", { locale: es })}
+                        {shipment.departure_at_utc ? format(new Date(shipment.departure_at_utc), "dd MMM, HH:mm", { locale: es }) : 'N/A'}
                       </span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-slate-400">ETA</span>
                       <span className="text-white font-medium">
-                        {format(new Date(shipment.estimated_arrival_at), "dd MMM, HH:mm", { locale: es })}
+                        {shipment.eta_at_utc ? format(new Date(shipment.eta_at_utc), "dd MMM, HH:mm", { locale: es }) : 'N/A'}
                       </span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-slate-400">Duración</span>
-                      <span className="text-white">{shipment.eta_hours}h</span>
+                      <span className="text-white">{shipment.estimated_duration_minutes ? Math.round(shipment.estimated_duration_minutes / 60) : (shipment as any).eta_hours || 0}h</span>
                     </div>
                   </div>
                 </div>
@@ -381,7 +389,11 @@ export default function EnvioDetailPage() {
                           {checkins.map((checkin) => (
                             <div key={checkin.id} className="flex items-center justify-between text-xs p-2 rounded bg-white/5">
                               <span className="text-slate-400">
-                                {format(new Date(checkin.due_at), "dd/MM HH:mm", { locale: es })}
+                                {checkin.scheduled_for_utc 
+                                  ? format(new Date(checkin.scheduled_for_utc), "dd/MM HH:mm", { locale: es })
+                                  : (checkin as any).due_at 
+                                    ? format(new Date((checkin as any).due_at), "dd/MM HH:mm", { locale: es })
+                                    : 'N/A'}
                               </span>
                               <CheckinStatusBadge status={checkin.status} />
                             </div>

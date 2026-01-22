@@ -3,16 +3,29 @@ import { useRouter } from "next/router";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import AppLayout from "@/components/AppLayout";
-import { api, ContactCreate, extractErrorMessage } from "@/lib/api";
+import { api, ContactCreate } from "@/lib/api";
 
 export default function NuevoContactoPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
-  const [channel, setChannel] = useState<"TELEGRAM" | "WHATSAPP">("TELEGRAM");
+  const [formData, setFormData] = useState<ContactCreate>({
+    name: "",
+    channel: "telegram",
+    telegram_chat_id: "",
+    phone_e164: "",
+  });
+
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -20,23 +33,17 @@ export default function NuevoContactoPage() {
     setLoading(true);
 
     try {
-      // Normalizar teléfono: asegurar que empiece con +
-      let normalizedPhone = phone.trim();
-      if (!normalizedPhone.startsWith("+")) {
-        normalizedPhone = "+" + normalizedPhone;
-      }
-
       const data: ContactCreate = {
-        name: name,
-        channel: channel,
-        telegram_chat_id: null,  // Se vincula cuando el conductor hace /start
-        phone_e164: normalizedPhone,
+        name: formData.name,
+        channel: formData.channel,
+        telegram_chat_id: formData.telegram_chat_id || null,
+        phone_e164: formData.phone_e164 || null,
       };
 
       await api.createContact(data);
       router.push("/contactos");
     } catch (err) {
-      setError(extractErrorMessage(err));
+      setError(err instanceof Error ? err.message : "Error al crear contacto");
     } finally {
       setLoading(false);
     }
@@ -55,9 +62,9 @@ export default function NuevoContactoPage() {
             <ArrowLeft className="h-4 w-4" />
             Volver a contactos
           </Link>
-          <h1 className="text-3xl font-semibold text-white">Nuevo Conductor</h1>
+          <h1 className="text-3xl font-semibold text-white">Nuevo Contacto</h1>
           <p className="mt-1 text-sm text-slate-400">
-            Agrega un conductor para asignarlo a envíos
+            Agrega un contacto para recibir notificaciones
           </p>
         </div>
 
@@ -73,58 +80,78 @@ export default function NuevoContactoPage() {
             {/* Name */}
             <div>
               <label className="block text-sm font-medium text-slate-300 mb-1.5">
-                Nombre del conductor *
+                Nombre *
               </label>
               <input
                 type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
+                name="name"
+                value={formData.name}
+                onChange={handleChange}
                 className="w-full rounded-lg border border-border bg-input px-4 py-2.5 text-white placeholder-slate-500 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                 placeholder="Juan Pérez"
                 required
               />
             </div>
 
-            {/* Phone */}
+            {/* Channel */}
             <div>
               <label className="block text-sm font-medium text-slate-300 mb-1.5">
-                Teléfono *
+                Canal de Comunicación *
+              </label>
+              <select
+                name="channel"
+                value={formData.channel}
+                onChange={handleChange}
+                className="w-full rounded-lg border border-border bg-input px-4 py-2.5 text-white focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                required
+              >
+                <option value="telegram">Telegram</option>
+                <option value="sms">SMS</option>
+                <option value="whatsapp">WhatsApp</option>
+              </select>
+            </div>
+
+            {/* Phone - always shown for identification */}
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-1.5">
+                Teléfono (formato E.164) *
               </label>
               <input
                 type="tel"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
+                name="phone_e164"
+                value={formData.phone_e164 || ""}
+                onChange={handleChange}
                 className="w-full rounded-lg border border-border bg-input px-4 py-2.5 text-white placeholder-slate-500 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                 placeholder="+34612345678"
                 required
               />
               <p className="mt-1.5 text-xs text-slate-500">
-                El teléfono con el que tiene registrada la app de mensajería
+                {formData.channel === "telegram" 
+                  ? "El conductor compartirá su teléfono en Telegram para vincularse automáticamente"
+                  : "Incluye el código de país, ej: +34612345678"}
               </p>
             </div>
 
-            {/* Channel */}
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1.5">
-                Canal de comunicación *
-              </label>
-              <select
-                value={channel}
-                onChange={(e) => setChannel(e.target.value as "TELEGRAM" | "WHATSAPP")}
-                className="w-full rounded-lg border border-border bg-input px-4 py-2.5 text-white focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-              >
-                <option value="TELEGRAM">📱 Telegram</option>
-                <option value="WHATSAPP">💬 WhatsApp (próximamente)</option>
-              </select>
-            </div>
-
-            {/* Info box */}
-            <div className="rounded-lg bg-primary/10 border border-primary/20 p-4">
-              <p className="text-sm text-slate-300">
-                <strong className="text-white">Siguiente paso:</strong> El conductor debe abrir el bot de Telegram y pulsar "Iniciar". 
-                El sistema lo vinculará automáticamente por su número de teléfono.
-              </p>
-            </div>
+            {/* Telegram Chat ID - optional, auto-filled when driver shares phone */}
+            {formData.channel === "telegram" && (
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-1.5">
+                  Telegram Chat ID
+                  <span className="text-slate-500 ml-1">(opcional - se vincula automáticamente)</span>
+                </label>
+                <input
+                  type="text"
+                  name="telegram_chat_id"
+                  value={formData.telegram_chat_id || ""}
+                  onChange={handleChange}
+                  className="w-full rounded-lg border border-border bg-input px-4 py-2.5 text-white placeholder-slate-500 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                  placeholder="123456789"
+                />
+                <p className="mt-1.5 text-xs text-slate-500">
+                  Si lo dejas vacío, se vinculará cuando el conductor envíe /start y comparta su teléfono
+                </p>
+              </div>
+            )}
 
             {/* Actions */}
             <div className="flex gap-4 pt-4">
@@ -139,7 +166,7 @@ export default function NuevoContactoPage() {
                 disabled={loading}
                 className="flex-1 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-white shadow-glow-primary transition hover:brightness-110 disabled:opacity-50"
               >
-                {loading ? "Creando..." : "Crear Conductor"}
+                {loading ? "Creando..." : "Crear Contacto"}
               </button>
             </div>
           </form>

@@ -2,94 +2,9 @@
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://on-site-on-transit.onrender.com';
 
-/**
- * FastAPI validation error detail item
- */
-interface ValidationErrorDetail {
-  loc: (string | number)[];
-  msg: string;
-  type: string;
-}
-
-/**
- * Possible error response structures from the backend
- */
-interface ApiErrorResponse {
-  detail?: string | ValidationErrorDetail[] | Record<string, unknown>;
-  message?: string;
-  error?: string;
-}
-
-/**
- * Extracts a human-readable error message from various error types.
- * Handles: FastAPI validation errors, standard Error objects, fetch errors, and unknown types.
- */
-export function extractErrorMessage(error: unknown): string {
-  // Handle null/undefined
-  if (error == null) {
-    return 'Error desconocido';
-  }
-
-  // Handle string directly
-  if (typeof error === 'string') {
-    return error;
-  }
-
-  // Handle standard Error objects
-  if (error instanceof Error) {
-    return error.message || 'Error desconocido';
-  }
-
-  // Handle API error response objects
-  if (typeof error === 'object') {
-    const errorObj = error as ApiErrorResponse;
-
-    // FastAPI validation errors: detail is an array
-    if (Array.isArray(errorObj.detail)) {
-      const messages = errorObj.detail
-        .map((item: ValidationErrorDetail) => {
-          const field = item.loc?.slice(-1)[0] || 'campo';
-          return `${field}: ${item.msg}`;
-        })
-        .join(', ');
-      return messages || 'Error de validación';
-    }
-
-    // Standard detail string
-    if (typeof errorObj.detail === 'string') {
-      return errorObj.detail;
-    }
-
-    // Detail is an object (convert to readable string)
-    if (errorObj.detail && typeof errorObj.detail === 'object') {
-      return JSON.stringify(errorObj.detail);
-    }
-
-    // Alternative error fields
-    if (typeof errorObj.message === 'string') {
-      return errorObj.message;
-    }
-
-    if (typeof errorObj.error === 'string') {
-      return errorObj.error;
-    }
-  }
-
-  // Last resort: try to stringify, but avoid [object Object]
-  try {
-    const str = JSON.stringify(error);
-    if (str && str !== '{}') {
-      return str;
-    }
-  } catch {
-    // JSON.stringify failed
-  }
-
-  return 'Error desconocido';
-}
-
-// Demo mode - set to false to use real backend
-const DEMO_MODE = false;
+// Demo mode - set to true for Vercel deployments without backend
+// Set NEXT_PUBLIC_DEMO_MODE=false in environment to use real backend
+const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE !== 'false';
 
 interface TokenResponse {
   access_token: string;
@@ -104,6 +19,8 @@ interface User {
   created_at: string;
 }
 
+export type CheckinPlanMode = 'INTERVAL' | 'MILESTONE';
+
 export interface Shipment {
   id: string;
   tenant_id: string;
@@ -112,12 +29,26 @@ export interface Shipment {
   destination_text: string;
   destination_lat: number | null;
   destination_lon: number | null;
-  planned_departure_at: string;
-  eta_hours: number;
-  estimated_arrival_at: string;
-  status: 'pending' | 'in_transit' | 'delivered' | 'delayed' | 'cancelled';
+  // UTC times
+  departure_at_utc: string;
+  eta_at_utc: string;
+  // Timezone for display
+  timezone: string;
+  // Duration in minutes
+  estimated_duration_minutes: number;
+  // Check-in configuration
+  checkin_plan_mode: CheckinPlanMode;
+  checkin_interval_minutes: number | null;
+  checkin_count: number | null;
+  status: 'CREATED' | 'ASSIGNED' | 'IN_TRANSIT' | 'INCIDENT' | 'DELAYED' | 'DELIVERED';
   assigned_contact_id: string | null;
+  delivered_at_utc: string | null;
   created_at: string;
+  deleted_at: string | null;
+  // Legacy fields for backward compatibility
+  planned_departure_at?: string;
+  eta_hours?: number;
+  estimated_arrival_at?: string;
 }
 
 export interface ShipmentCreate {
@@ -126,15 +57,25 @@ export interface ShipmentCreate {
   destination_text: string;
   destination_lat?: number | null;
   destination_lon?: number | null;
-  planned_departure_at: string;
-  eta_hours: number;
+  // Local datetime (ISO format) - will be converted to UTC by backend
+  departure_at_local: string;
+  // IANA timezone
+  timezone?: string;
+  // Duration in minutes
+  estimated_duration_minutes: number;
+  // Check-in plan
+  checkin_plan_mode?: CheckinPlanMode;
+  checkin_interval_minutes?: number;
+  checkin_count?: number;
+  // Optional: assign driver at creation
+  assigned_contact_id?: string;
 }
 
 export interface Contact {
   id: string;
   tenant_id: string;
   name: string;
-  channel: 'TELEGRAM' | 'WHATSAPP';
+  channel: 'telegram' | 'sms' | 'whatsapp';
   telegram_chat_id: string | null;
   phone_e164: string | null;
   created_at: string;
@@ -151,16 +92,23 @@ export interface ShipmentEvent {
 export interface TrackingCheckin {
   id: string;
   shipment_id: string;
-  due_at: string;
-  sent_at: string | null;
-  answered_at: string | null;
-  status: 'pending' | 'sent' | 'answered' | 'missed' | 'escalated';
+  scheduled_for_utc: string;
+  status: 'PENDING' | 'SENDING' | 'SENT' | 'ANSWERED' | 'MISSED' | 'ESCALATED' | 'FAILED' | 'CANCELLED';
+  locked_at_utc: string | null;
+  sent_at_utc: string | null;
+  answered_at_utc: string | null;
+  attempts: number;
+  last_error: string | null;
   created_at: string;
+  // Legacy fields
+  due_at?: string;
+  sent_at?: string | null;
+  answered_at?: string | null;
 }
 
 export interface ContactCreate {
   name: string;
-  channel: 'TELEGRAM' | 'WHATSAPP';
+  channel: 'telegram' | 'sms' | 'whatsapp';
   telegram_chat_id?: string | null;
   phone_e164?: string | null;
 }
@@ -177,12 +125,18 @@ const demoShipments: Shipment[] = [
     destination_text: 'Barcelona, España',
     destination_lat: 41.3851,
     destination_lon: 2.1734,
-    planned_departure_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-    eta_hours: 6,
-    estimated_arrival_at: new Date(Date.now() + 4 * 60 * 60 * 1000).toISOString(),
-    status: 'in_transit',
+    departure_at_utc: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+    eta_at_utc: new Date(Date.now() + 4 * 60 * 60 * 1000).toISOString(),
+    timezone: 'Europe/Madrid',
+    estimated_duration_minutes: 360,
+    checkin_plan_mode: 'INTERVAL',
+    checkin_interval_minutes: 30,
+    checkin_count: null,
+    status: 'IN_TRANSIT',
     assigned_contact_id: 'contact-001',
+    delivered_at_utc: null,
     created_at: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+    deleted_at: null,
   },
   {
     id: 'ship-002',
@@ -192,12 +146,18 @@ const demoShipments: Shipment[] = [
     destination_text: 'Sevilla, España',
     destination_lat: 37.3891,
     destination_lon: -5.9845,
-    planned_departure_at: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString(),
-    eta_hours: 8,
-    estimated_arrival_at: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
-    status: 'delayed',
+    departure_at_utc: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString(),
+    eta_at_utc: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
+    timezone: 'Europe/Madrid',
+    estimated_duration_minutes: 480,
+    checkin_plan_mode: 'INTERVAL',
+    checkin_interval_minutes: 60,
+    checkin_count: null,
+    status: 'DELAYED',
     assigned_contact_id: null,
+    delivered_at_utc: null,
     created_at: new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString(),
+    deleted_at: null,
   },
   {
     id: 'ship-003',
@@ -207,12 +167,18 @@ const demoShipments: Shipment[] = [
     destination_text: 'Zaragoza, España',
     destination_lat: 41.6488,
     destination_lon: -0.8891,
-    planned_departure_at: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(),
-    eta_hours: 4,
-    estimated_arrival_at: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString(),
-    status: 'delivered',
+    departure_at_utc: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(),
+    eta_at_utc: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString(),
+    timezone: 'Europe/Madrid',
+    estimated_duration_minutes: 240,
+    checkin_plan_mode: 'MILESTONE',
+    checkin_interval_minutes: null,
+    checkin_count: 3,
+    status: 'DELIVERED',
     assigned_contact_id: 'contact-002',
+    delivered_at_utc: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString(),
     created_at: new Date(Date.now() - 72 * 60 * 60 * 1000).toISOString(),
+    deleted_at: null,
   },
   {
     id: 'ship-004',
@@ -222,12 +188,18 @@ const demoShipments: Shipment[] = [
     destination_text: 'Madrid, España',
     destination_lat: 40.4168,
     destination_lon: -3.7038,
-    planned_departure_at: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
-    eta_hours: 5,
-    estimated_arrival_at: new Date(Date.now() + 7 * 60 * 60 * 1000).toISOString(),
-    status: 'pending',
+    departure_at_utc: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
+    eta_at_utc: new Date(Date.now() + 7 * 60 * 60 * 1000).toISOString(),
+    timezone: 'Europe/Madrid',
+    estimated_duration_minutes: 300,
+    checkin_plan_mode: 'INTERVAL',
+    checkin_interval_minutes: 30,
+    checkin_count: null,
+    status: 'CREATED',
     assigned_contact_id: null,
+    delivered_at_utc: null,
     created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+    deleted_at: null,
   },
 ];
 
@@ -236,7 +208,7 @@ const demoContacts: Contact[] = [
     id: 'contact-001',
     tenant_id: DEMO_TENANT_ID,
     name: 'Carlos Rodríguez',
-    channel: 'TELEGRAM',
+    channel: 'telegram',
     telegram_chat_id: '123456789',
     phone_e164: null,
     created_at: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
@@ -245,7 +217,7 @@ const demoContacts: Contact[] = [
     id: 'contact-002',
     tenant_id: DEMO_TENANT_ID,
     name: 'María González',
-    channel: 'WHATSAPP',
+    channel: 'whatsapp',
     telegram_chat_id: null,
     phone_e164: '+34612345678',
     created_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
@@ -254,7 +226,7 @@ const demoContacts: Contact[] = [
     id: 'contact-003',
     tenant_id: DEMO_TENANT_ID,
     name: 'Pedro Sánchez',
-    channel: 'TELEGRAM',
+    channel: 'sms',
     telegram_chat_id: null,
     phone_e164: '+34698765432',
     created_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
@@ -373,28 +345,37 @@ const demoCheckins: Record<string, TrackingCheckin[]> = {
     {
       id: 'chk-001',
       shipment_id: 'ship-001',
-      due_at: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
-      sent_at: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
-      answered_at: new Date(Date.now() - 3.9 * 60 * 60 * 1000).toISOString(),
-      status: 'answered',
+      scheduled_for_utc: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
+      status: 'ANSWERED',
+      locked_at_utc: null,
+      sent_at_utc: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
+      answered_at_utc: new Date(Date.now() - 3.9 * 60 * 60 * 1000).toISOString(),
+      attempts: 1,
+      last_error: null,
       created_at: new Date(Date.now() - 22 * 60 * 60 * 1000).toISOString(),
     },
     {
       id: 'chk-002',
       shipment_id: 'ship-001',
-      due_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-      sent_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-      answered_at: null,
-      status: 'sent',
+      scheduled_for_utc: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+      status: 'SENT',
+      locked_at_utc: null,
+      sent_at_utc: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+      answered_at_utc: null,
+      attempts: 1,
+      last_error: null,
       created_at: new Date(Date.now() - 22 * 60 * 60 * 1000).toISOString(),
     },
     {
       id: 'chk-003',
       shipment_id: 'ship-001',
-      due_at: new Date(Date.now() + 1 * 60 * 60 * 1000).toISOString(),
-      sent_at: null,
-      answered_at: null,
-      status: 'pending',
+      scheduled_for_utc: new Date(Date.now() + 1 * 60 * 60 * 1000).toISOString(),
+      status: 'PENDING',
+      locked_at_utc: null,
+      sent_at_utc: null,
+      answered_at_utc: null,
+      attempts: 0,
+      last_error: null,
       created_at: new Date(Date.now() - 22 * 60 * 60 * 1000).toISOString(),
     },
   ],
@@ -411,9 +392,57 @@ class ApiClient {
       // Load demo data from localStorage if exists
       const savedShipments = localStorage.getItem('demo_shipments');
       const savedContacts = localStorage.getItem('demo_contacts');
-      if (savedShipments) this.demoShipments = JSON.parse(savedShipments);
+      if (savedShipments) {
+        const parsed = JSON.parse(savedShipments);
+        // Migrate old shipment data to new format
+        this.demoShipments = parsed.map((s: Shipment & { planned_departure_at?: string; estimated_arrival_at?: string; eta_hours?: number }) => this.migrateShipment(s));
+        // Save migrated data
+        this.saveDemoData();
+      }
       if (savedContacts) this.demoContacts = JSON.parse(savedContacts);
     }
+  }
+
+  // Migrate old shipment format to new UTC-based format
+  private migrateShipment(s: Shipment & { planned_departure_at?: string; estimated_arrival_at?: string; eta_hours?: number }): Shipment {
+    // If already has new fields, return as-is
+    if (s.departure_at_utc && s.eta_at_utc) {
+      return s;
+    }
+    
+    // Convert from old format
+    const departure = s.departure_at_utc || s.planned_departure_at || new Date().toISOString();
+    const eta = s.eta_at_utc || s.estimated_arrival_at || new Date(Date.now() + 4 * 60 * 60 * 1000).toISOString();
+    const durationMinutes = s.estimated_duration_minutes || (s.eta_hours ? s.eta_hours * 60 : 240);
+    
+    // Map old status values to new uppercase format
+    let status = s.status;
+    const statusMap: Record<string, Shipment['status']> = {
+      'pending': 'ASSIGNED',
+      'in_transit': 'IN_TRANSIT',
+      'delivered': 'DELIVERED',
+      'delayed': 'DELAYED',
+      'incident': 'INCIDENT',
+      'created': 'CREATED',
+      'assigned': 'ASSIGNED',
+    };
+    if (statusMap[status.toLowerCase()]) {
+      status = statusMap[status.toLowerCase()];
+    }
+    
+    return {
+      ...s,
+      departure_at_utc: departure,
+      eta_at_utc: eta,
+      timezone: s.timezone || 'Europe/Madrid',
+      estimated_duration_minutes: durationMinutes,
+      checkin_plan_mode: s.checkin_plan_mode || 'INTERVAL',
+      checkin_interval_minutes: s.checkin_interval_minutes ?? 30,
+      checkin_count: s.checkin_count ?? null,
+      delivered_at_utc: s.delivered_at_utc || null,
+      deleted_at: s.deleted_at || null,
+      status,
+    };
   }
 
   private saveDemoData() {
@@ -457,9 +486,8 @@ class ApiClient {
     });
 
     if (!response.ok) {
-      const errorBody = await response.json().catch(() => ({ detail: 'Error de conexión' }));
-      const errorMessage = extractErrorMessage(errorBody);
-      throw new Error(errorMessage);
+      const error = await response.json().catch(() => ({ detail: 'Request failed' }));
+      throw new Error(error.detail || 'Request failed');
     }
 
     return response.json();
@@ -550,11 +578,23 @@ class ApiClient {
   }
 
   // Shipments
-  async getShipments(): Promise<Shipment[]> {
+  async getShipments(statusFilter?: 'IN_TRANSIT' | 'DELAYED' | 'DELIVERED'): Promise<Shipment[]> {
     if (DEMO_MODE) {
-      return this.demoShipments;
+      // Filter out soft-deleted shipments
+      let filtered = this.demoShipments.filter(s => !s.deleted_at);
+      
+      if (statusFilter) {
+        filtered = filtered.filter(s => {
+          if (statusFilter === 'IN_TRANSIT') return s.status === 'IN_TRANSIT' || s.status === 'ASSIGNED';
+          if (statusFilter === 'DELAYED') return s.status === 'DELAYED' || s.status === 'INCIDENT';
+          if (statusFilter === 'DELIVERED') return s.status === 'DELIVERED';
+          return true;
+        });
+      }
+      return filtered;
     }
-    return this.request<Shipment[]>('/shipments');
+    const url = statusFilter ? `/shipments?status=${statusFilter}` : '/shipments';
+    return this.request<Shipment[]>(url);
   }
 
   async getShipment(id: string): Promise<Shipment> {
@@ -568,6 +608,8 @@ class ApiClient {
 
   async createShipment(data: ShipmentCreate): Promise<Shipment> {
     if (DEMO_MODE) {
+      const departureUtc = new Date(data.departure_at_local).toISOString();
+      const etaUtc = new Date(new Date(data.departure_at_local).getTime() + data.estimated_duration_minutes * 60 * 1000).toISOString();
       const newShipment: Shipment = {
         id: `ship-${Date.now()}`,
         tenant_id: DEMO_TENANT_ID,
@@ -576,14 +618,24 @@ class ApiClient {
         destination_text: data.destination_text,
         destination_lat: data.destination_lat || null,
         destination_lon: data.destination_lon || null,
-        planned_departure_at: data.planned_departure_at,
-        eta_hours: data.eta_hours,
-        estimated_arrival_at: new Date(new Date(data.planned_departure_at).getTime() + data.eta_hours * 60 * 60 * 1000).toISOString(),
-        status: 'pending',
-        assigned_contact_id: null,
+        departure_at_utc: departureUtc,
+        eta_at_utc: etaUtc,
+        timezone: data.timezone || 'Europe/Madrid',
+        estimated_duration_minutes: data.estimated_duration_minutes,
+        checkin_plan_mode: data.checkin_plan_mode || 'INTERVAL',
+        checkin_interval_minutes: data.checkin_interval_minutes || 30,
+        checkin_count: data.checkin_count || null,
+        status: 'CREATED',
+        assigned_contact_id: data.assigned_contact_id || null,
+        delivered_at_utc: null,
         created_at: new Date().toISOString(),
+        deleted_at: null,
       };
       this.demoShipments.unshift(newShipment);
+      
+      // Generate check-ins for the new shipment
+      this.regenerateCheckins(newShipment);
+      
       this.saveDemoData();
       return newShipment;
     }
@@ -604,6 +656,166 @@ class ApiClient {
     return this.request<Shipment>(`/shipments/${shipmentId}/assign`, {
       method: 'POST',
       body: JSON.stringify({ contact_id: contactId }),
+    });
+  }
+
+  async updateShipment(shipmentId: string, data: Partial<ShipmentCreate>): Promise<Shipment> {
+    if (DEMO_MODE) {
+      const shipment = this.demoShipments.find(s => s.id === shipmentId);
+      if (!shipment) throw new Error('Envío no encontrado');
+      
+      // Track if time-related fields changed for check-in rescheduling
+      const timeChanged = data.departure_at_local || data.estimated_duration_minutes || 
+                          data.checkin_plan_mode || data.checkin_interval_minutes || data.checkin_count;
+      
+      // Update basic fields
+      if (data.customer_name !== undefined) shipment.customer_name = data.customer_name;
+      if (data.origin_text !== undefined) shipment.origin_text = data.origin_text;
+      if (data.destination_text !== undefined) shipment.destination_text = data.destination_text;
+      if (data.timezone !== undefined) shipment.timezone = data.timezone;
+      
+      // Update time-related fields
+      if (data.departure_at_local) {
+        shipment.departure_at_utc = new Date(data.departure_at_local).toISOString();
+      }
+      if (data.estimated_duration_minutes !== undefined) {
+        shipment.estimated_duration_minutes = data.estimated_duration_minutes;
+        shipment.eta_at_utc = new Date(
+          new Date(shipment.departure_at_utc).getTime() + data.estimated_duration_minutes * 60 * 1000
+        ).toISOString();
+      }
+      
+      // Update check-in plan fields
+      if (data.checkin_plan_mode !== undefined) shipment.checkin_plan_mode = data.checkin_plan_mode;
+      if (data.checkin_interval_minutes !== undefined) shipment.checkin_interval_minutes = data.checkin_interval_minutes;
+      if (data.checkin_count !== undefined) shipment.checkin_count = data.checkin_count;
+      
+      // Regenerate check-ins if time/plan changed
+      if (timeChanged) {
+        this.regenerateCheckins(shipment);
+      }
+      
+      this.saveDemoData();
+      return shipment;
+    }
+    return this.request<Shipment>(`/shipments/${shipmentId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  }
+
+  // Helper to regenerate check-ins in demo mode
+  private regenerateCheckins(shipment: Shipment) {
+    const savedCheckins = typeof window !== 'undefined' ? localStorage.getItem('demo_checkins') : null;
+    const checkins: Record<string, TrackingCheckin[]> = savedCheckins ? JSON.parse(savedCheckins) : {};
+    
+    // Cancel existing pending checkins
+    if (checkins[shipment.id]) {
+      checkins[shipment.id] = checkins[shipment.id].map(c => {
+        if (c.status === 'PENDING') {
+          return { ...c, status: 'CANCELLED' as const };
+        }
+        return c;
+      });
+    } else {
+      checkins[shipment.id] = [];
+    }
+    
+    // Generate new schedule
+    const schedule = this.generateCheckinSchedule(shipment);
+    const newCheckins: TrackingCheckin[] = schedule.map((scheduledFor, idx) => ({
+      id: `chk-${shipment.id}-${Date.now()}-${idx}`,
+      shipment_id: shipment.id,
+      scheduled_for_utc: scheduledFor,
+      status: 'PENDING' as const,
+      locked_at_utc: null,
+      sent_at_utc: null,
+      answered_at_utc: null,
+      attempts: 0,
+      last_error: null,
+      created_at: new Date().toISOString(),
+    }));
+    
+    // Add new checkins (keep cancelled/sent ones for history)
+    checkins[shipment.id] = [...checkins[shipment.id].filter(c => c.status !== 'PENDING'), ...newCheckins];
+    
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('demo_checkins', JSON.stringify(checkins));
+    }
+  }
+
+  // Generate check-in schedule based on shipment plan
+  private generateCheckinSchedule(shipment: Shipment): string[] {
+    const departure = new Date(shipment.departure_at_utc).getTime();
+    const eta = new Date(shipment.eta_at_utc).getTime();
+    const now = Date.now();
+    const schedule: string[] = [];
+    
+    if (shipment.checkin_plan_mode === 'INTERVAL' && shipment.checkin_interval_minutes) {
+      const intervalMs = shipment.checkin_interval_minutes * 60 * 1000;
+      let current = departure + intervalMs; // Skip the departure itself
+      
+      while (current < eta && schedule.length < 200) {
+        if (current > now) { // Don't schedule in the past
+          schedule.push(new Date(current).toISOString());
+        }
+        current += intervalMs;
+      }
+    } else if (shipment.checkin_plan_mode === 'MILESTONE' && shipment.checkin_count) {
+      const count = Math.min(shipment.checkin_count, 200);
+      const duration = eta - departure;
+      
+      for (let i = 1; i <= count; i++) {
+        // Distribute uniformly: 1/N+1, 2/N+1, ..., N/N+1
+        const fraction = i / (count + 1);
+        const checkTime = departure + duration * fraction;
+        if (checkTime > now) { // Don't schedule in the past
+          schedule.push(new Date(checkTime).toISOString());
+        }
+      }
+    }
+    
+    return schedule;
+  }
+
+  async deleteShipment(shipmentId: string): Promise<void> {
+    if (DEMO_MODE) {
+      const shipment = this.demoShipments.find(s => s.id === shipmentId);
+      if (!shipment) throw new Error('Envío no encontrado');
+      
+      // Soft delete: set deleted_at
+      shipment.deleted_at = new Date().toISOString();
+      
+      // Cancel pending check-ins
+      const savedCheckins = typeof window !== 'undefined' ? localStorage.getItem('demo_checkins') : null;
+      if (savedCheckins) {
+        const checkins: Record<string, TrackingCheckin[]> = JSON.parse(savedCheckins);
+        if (checkins[shipmentId]) {
+          checkins[shipmentId] = checkins[shipmentId].map(c => 
+            c.status === 'PENDING' ? { ...c, status: 'CANCELLED' as const } : c
+          );
+          localStorage.setItem('demo_checkins', JSON.stringify(checkins));
+        }
+      }
+      
+      this.saveDemoData();
+      return;
+    }
+    await this.request<void>(`/shipments/${shipmentId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async markDelivered(shipmentId: string): Promise<Shipment> {
+    if (DEMO_MODE) {
+      const shipment = this.demoShipments.find(s => s.id === shipmentId);
+      if (!shipment) throw new Error('Envío no encontrado');
+      shipment.status = 'DELIVERED';
+      this.saveDemoData();
+      return shipment;
+    }
+    return this.request<Shipment>(`/shipments/${shipmentId}/deliver`, {
+      method: 'POST',
     });
   }
 
@@ -656,6 +868,12 @@ class ApiClient {
   }
 
   async sendManualCheckin(shipmentId: string): Promise<TrackingCheckin> {
+    if (DEMO_MODE) {
+      // In demo mode, simulate sending a check-in
+      const checkin = await this.simulateSendCheckin(shipmentId);
+      if (checkin) return checkin;
+      throw new Error('No se pudo enviar el check-in en modo demo');
+    }
     return this.request<TrackingCheckin>(`/tracking/shipments/${shipmentId}/send-checkin`, {
       method: 'POST',
     });
@@ -681,8 +899,8 @@ class ApiClient {
     // Update checkin status
     const checkin = checkins[shipmentId].find(c => c.id === checkinId);
     if (checkin) {
-      checkin.status = 'answered';
-      checkin.answered_at = new Date().toISOString();
+      checkin.status = 'ANSWERED';
+      checkin.answered_at_utc = new Date().toISOString();
     }
 
     // Add event
@@ -699,7 +917,7 @@ class ApiClient {
     if (response !== 'ok') {
       const shipment = this.demoShipments.find(s => s.id === shipmentId);
       if (shipment) {
-        shipment.status = 'delayed';
+        shipment.status = 'DELAYED';
         this.saveDemoData();
       }
     }
@@ -754,7 +972,7 @@ class ApiClient {
     const oldEta = shipment.estimated_arrival_at;
     const newEta = new Date(Date.now() + (delayMinutes + 60) * 60 * 1000).toISOString();
     shipment.estimated_arrival_at = newEta;
-    shipment.status = 'in_transit';
+    shipment.status = 'IN_TRANSIT';
 
     // Add events
     events[shipmentId].push({
@@ -804,10 +1022,13 @@ class ApiClient {
     const newCheckin: TrackingCheckin = {
       id: `chk-${Date.now()}`,
       shipment_id: shipmentId,
-      due_at: new Date().toISOString(),
-      sent_at: new Date().toISOString(),
-      answered_at: null,
-      status: 'sent',
+      scheduled_for_utc: new Date().toISOString(),
+      status: 'SENT',
+      locked_at_utc: null,
+      sent_at_utc: new Date().toISOString(),
+      answered_at_utc: null,
+      attempts: 1,
+      last_error: null,
       created_at: new Date().toISOString(),
     };
 

@@ -18,15 +18,24 @@ class ShipmentStatus(str, Enum):
     ASSIGNED = "ASSIGNED"
     IN_TRANSIT = "IN_TRANSIT"
     INCIDENT = "INCIDENT"
+    DELAYED = "DELAYED"
     DELIVERED = "DELIVERED"
 
 
 class CheckinStatus(str, Enum):
     PENDING = "PENDING"
+    SENDING = "SENDING"  # Lock state to prevent duplicates
     SENT = "SENT"
     ANSWERED = "ANSWERED"
     MISSED = "MISSED"
     ESCALATED = "ESCALATED"
+    FAILED = "FAILED"
+    CANCELLED = "CANCELLED"
+
+
+class CheckinPlanMode(str, Enum):
+    INTERVAL = "INTERVAL"  # Fixed interval between check-ins
+    MILESTONE = "MILESTONE"  # Evenly distributed check-ins
 
 
 class EventType(str, Enum):

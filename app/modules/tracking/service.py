@@ -219,18 +219,22 @@ def start_incident(
     return state
 
 
-def set_incident_delay(
+def set_incident_delay_by_checkin(
     session: Session,
     tenant_id,
-    shipment_id,
+    checkin_id,
     contact_id,
     delay_minutes: int,
 ) -> models.ShipmentIncidentState | None:
+    """
+    Set delay for an incident using checkin_id.
+    This ensures correct context for drivers with multiple shipments.
+    """
     state = (
         session.query(models.ShipmentIncidentState)
         .filter(
             models.ShipmentIncidentState.tenant_id == tenant_id,
-            models.ShipmentIncidentState.shipment_id == shipment_id,
+            models.ShipmentIncidentState.checkin_id == checkin_id,
             models.ShipmentIncidentState.contact_id == contact_id,
             models.ShipmentIncidentState.state == IncidentState.WAITING_DELAY,
         )
@@ -247,9 +251,9 @@ def set_incident_delay(
     record_event(
         session,
         tenant_id=tenant_id,
-        shipment_id=shipment_id,
+        shipment_id=state.shipment_id,
         event_type=EventType.DELAY_REPORTED,
-        payload={"delay_minutes": delay_minutes},
+        payload={"delay_minutes": delay_minutes, "checkin_id": str(checkin_id)},
     )
     return state
 
@@ -335,6 +339,10 @@ def recalculate_route_and_eta(
 def find_incident_waiting_location(
     session: Session, tenant_id, contact_id
 ) -> models.ShipmentIncidentState | None:
+    """
+    Find the most recent incident waiting for location from a contact.
+    Note: For multi-shipment drivers, this returns the most recently updated incident.
+    """
     return (
         session.query(models.ShipmentIncidentState)
         .filter(
@@ -343,7 +351,50 @@ def find_incident_waiting_location(
             models.ShipmentIncidentState.state == IncidentState.WAITING_LOCATION,
         )
         .order_by(models.ShipmentIncidentState.updated_at.desc())
+        .first()
+    )
+
+
+def find_incident_by_checkin(
+    session: Session, tenant_id, checkin_id, contact_id
+) -> models.ShipmentIncidentState | None:
+    """Find an incident state by checkin_id - ensures correct context for multi-shipment drivers."""
+    return (
+        session.query(models.ShipmentIncidentState)
+        .filter(
+            models.ShipmentIncidentState.tenant_id == tenant_id,
+            models.ShipmentIncidentState.checkin_id == checkin_id,
+            models.ShipmentIncidentState.contact_id == contact_id,
+        )
         .one_or_none()
+    )
+
+
+def get_checkin(session: Session, tenant_id, checkin_id) -> models.TrackingCheckin | None:
+    """Get a checkin by ID."""
+    return (
+        session.query(models.TrackingCheckin)
+        .filter(
+            models.TrackingCheckin.id == checkin_id,
+            models.TrackingCheckin.tenant_id == tenant_id,
+        )
+        .one_or_none()
+    )
+
+
+def find_incident_by_shipment(
+    session: Session, tenant_id, shipment_id, contact_id
+) -> models.ShipmentIncidentState | None:
+    """Find an active incident state for a shipment and contact."""
+    return (
+        session.query(models.ShipmentIncidentState)
+        .filter(
+            models.ShipmentIncidentState.tenant_id == tenant_id,
+            models.ShipmentIncidentState.shipment_id == shipment_id,
+            models.ShipmentIncidentState.contact_id == contact_id,
+        )
+        .order_by(models.ShipmentIncidentState.updated_at.desc())
+        .first()
     )
 
 
@@ -357,6 +408,38 @@ def find_contact_by_channel(session: Session, tenant_id, channel, external_id: s
     else:
         query = query.filter(shipment_models.Contact.phone_e164 == external_id)
     return query.one_or_none()
+
+
+def find_contact_by_phone(session: Session, tenant_id, phone_e164: str):
+    """Find a contact by phone number (for linking Telegram accounts)."""
+    # Normalize phone number for comparison
+    phone_normalized = phone_e164.strip()
+    if not phone_normalized.startswith("+"):
+        phone_normalized = "+" + phone_normalized
+    
+    return session.query(shipment_models.Contact).filter(
+        shipment_models.Contact.tenant_id == tenant_id,
+        shipment_models.Contact.phone_e164 == phone_normalized,
+    ).one_or_none()
+
+
+def link_telegram_chat_to_contact(
+    session: Session,
+    contact,
+    telegram_chat_id: str,
+) -> bool:
+    """
+    Link a Telegram chat_id to an existing contact.
+    
+    Returns True if linked successfully, False if contact already had a different chat_id.
+    """
+    if contact.telegram_chat_id and contact.telegram_chat_id != telegram_chat_id:
+        # Already linked to a different Telegram account
+        return False
+    
+    contact.telegram_chat_id = telegram_chat_id
+    session.add(contact)
+    return True
 
 
 def find_or_create_telegram_contact(

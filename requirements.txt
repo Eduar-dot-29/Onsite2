@@ -12,3 +12,4 @@ celery
 redis
 python-telegram-bot
 python-json-logger
+pytz
