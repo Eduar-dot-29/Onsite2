@@ -84,6 +84,10 @@ def now_utc() -> datetime:
     return datetime.now(tz.utc)
 
 
+# Maximum number of check-ins per shipment to prevent spam
+MAX_CHECKINS = 200
+
+
 def generate_checkin_schedule(
     departure_utc: datetime,
     eta_utc: datetime,
@@ -104,7 +108,7 @@ def generate_checkin_schedule(
         skip_first: If True, skip check-in at exact departure time
     
     Returns:
-        List of scheduled check-in times in UTC
+        List of scheduled check-in times in UTC (max 200)
     """
     schedule: list[datetime] = []
     current_utc = now_utc()
@@ -125,7 +129,7 @@ def generate_checkin_schedule(
         else:
             current_time = departure_utc
         
-        while current_time < eta_utc:
+        while current_time < eta_utc and len(schedule) < MAX_CHECKINS:
             # Only schedule if in the future
             if current_time > current_utc:
                 schedule.append(current_time)
@@ -135,10 +139,13 @@ def generate_checkin_schedule(
         if not checkin_count or checkin_count <= 0:
             raise ValueError("checkin_count must be positive for MILESTONE mode")
         
-        # Distribute evenly between departure and ETA
-        interval = total_duration / (checkin_count + 1)
+        # Cap at max checkins
+        actual_count = min(checkin_count, MAX_CHECKINS)
         
-        for i in range(1, checkin_count + 1):
+        # Distribute evenly between departure and ETA
+        interval = total_duration / (actual_count + 1)
+        
+        for i in range(1, actual_count + 1):
             checkin_time = departure_utc + timedelta(minutes=interval * i)
             # Only schedule if in the future and before ETA
             if checkin_time > current_utc and checkin_time < eta_utc:

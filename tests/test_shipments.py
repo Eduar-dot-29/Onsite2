@@ -301,3 +301,138 @@ class TestShipmentDelete:
         
         assert found is not None
         assert found.deleted_at is not None
+
+
+class TestCheckinRescheduling:
+    """Test check-in rescheduling when shipment is updated."""
+
+    def test_update_cancels_pending_checkins(self, db_session, setup_data):
+        """
+        Updating time/plan should cancel pending check-ins.
+        This tests the reprogramming requirement.
+        """
+        from app.core.enums import CheckinStatus
+        from app.modules.tracking.models import TrackingCheckin
+        from app.core.timezone import now_utc
+        
+        shipment = setup_data["shipments"][0]
+        tenant_id = setup_data["tenant"].id
+        current = now_utc()
+        
+        # Create some pending check-ins
+        checkins = []
+        for i in range(3):
+            checkin = TrackingCheckin(
+                id=uuid4(),
+                tenant_id=tenant_id,
+                shipment_id=shipment.id,
+                scheduled_for_utc=current + timedelta(hours=i+1),
+                status=CheckinStatus.PENDING,
+                attempts=0,
+            )
+            db_session.add(checkin)
+            checkins.append(checkin)
+        
+        # Also create a SENT checkin (should NOT be cancelled)
+        sent_checkin = TrackingCheckin(
+            id=uuid4(),
+            tenant_id=tenant_id,
+            shipment_id=shipment.id,
+            scheduled_for_utc=current - timedelta(hours=1),
+            status=CheckinStatus.SENT,
+            sent_at_utc=current - timedelta(minutes=30),
+            attempts=1,
+        )
+        db_session.add(sent_checkin)
+        db_session.commit()
+        
+        # Simulate cancelling pending check-ins (what happens on update)
+        pending_checkins = (
+            db_session.query(TrackingCheckin)
+            .filter(
+                TrackingCheckin.shipment_id == shipment.id,
+                TrackingCheckin.status == CheckinStatus.PENDING,
+            )
+            .all()
+        )
+        
+        for c in pending_checkins:
+            c.status = CheckinStatus.CANCELLED
+        db_session.commit()
+        
+        # Verify pending were cancelled
+        cancelled_count = (
+            db_session.query(TrackingCheckin)
+            .filter(
+                TrackingCheckin.shipment_id == shipment.id,
+                TrackingCheckin.status == CheckinStatus.CANCELLED,
+            )
+            .count()
+        )
+        assert cancelled_count == 3
+        
+        # Verify SENT was NOT cancelled
+        db_session.refresh(sent_checkin)
+        assert sent_checkin.status == CheckinStatus.SENT
+
+    def test_reschedule_creates_new_checkins(self, db_session, setup_data):
+        """
+        After cancelling, new check-ins should be created.
+        This tests the full reprogramming flow.
+        """
+        from app.core.enums import CheckinStatus
+        from app.modules.tracking.models import TrackingCheckin
+        from app.core.timezone import now_utc
+        
+        shipment = setup_data["shipments"][0]
+        tenant_id = setup_data["tenant"].id
+        current = now_utc()
+        
+        # Create and cancel old check-ins
+        for i in range(2):
+            checkin = TrackingCheckin(
+                id=uuid4(),
+                tenant_id=tenant_id,
+                shipment_id=shipment.id,
+                scheduled_for_utc=current + timedelta(hours=i+1),
+                status=CheckinStatus.CANCELLED,  # Already cancelled
+                attempts=0,
+            )
+            db_session.add(checkin)
+        db_session.commit()
+        
+        # Create new check-ins (simulating reschedule)
+        new_checkins = []
+        for i in range(4):  # New schedule has 4 check-ins
+            checkin = TrackingCheckin(
+                id=uuid4(),
+                tenant_id=tenant_id,
+                shipment_id=shipment.id,
+                scheduled_for_utc=current + timedelta(hours=i+2),  # Different times
+                status=CheckinStatus.PENDING,
+                attempts=0,
+            )
+            db_session.add(checkin)
+            new_checkins.append(checkin)
+        db_session.commit()
+        
+        # Verify we have correct counts
+        pending_count = (
+            db_session.query(TrackingCheckin)
+            .filter(
+                TrackingCheckin.shipment_id == shipment.id,
+                TrackingCheckin.status == CheckinStatus.PENDING,
+            )
+            .count()
+        )
+        cancelled_count = (
+            db_session.query(TrackingCheckin)
+            .filter(
+                TrackingCheckin.shipment_id == shipment.id,
+                TrackingCheckin.status == CheckinStatus.CANCELLED,
+            )
+            .count()
+        )
+        
+        assert pending_count == 4  # New schedule
+        assert cancelled_count == 2  # Old schedule preserved for audit

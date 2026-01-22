@@ -25,14 +25,14 @@ from app.core.timezone import (
 class TestToUtc:
     """Test local to UTC conversion."""
 
-    def test_madrid_to_utc_winter(self):
-        """Spain winter time: UTC+1"""
-        # 02/10/2026 09:00 Madrid (winter, CET = UTC+1)
+    def test_madrid_to_utc_summer_october(self):
+        """Spain summer time: UTC+2 (Oct 2 is still in CEST before DST change on Oct 25)"""
+        # 02/10/2026 09:00 Madrid (summer, CEST = UTC+2)
         local_str = "2026-10-02T09:00:00"
         utc_dt = to_utc(local_str, "Europe/Madrid")
         
-        # Should be 08:00 UTC (1 hour behind)
-        assert utc_dt.hour == 8
+        # Should be 07:00 UTC (2 hours behind in CEST)
+        assert utc_dt.hour == 7
         assert utc_dt.tzinfo == tz.utc
 
     def test_madrid_to_utc_summer(self):
@@ -58,13 +58,13 @@ class TestToUtc:
 class TestUtcToLocal:
     """Test UTC to local conversion."""
 
-    def test_utc_to_madrid_winter(self):
-        """Convert UTC to Madrid winter time."""
+    def test_utc_to_madrid_summer_october(self):
+        """Convert UTC to Madrid summer time (Oct 2 is still CEST)."""
         utc_dt = datetime(2026, 10, 2, 8, 0, 0, tzinfo=tz.utc)
         local_dt = utc_to_local(utc_dt, "Europe/Madrid")
         
-        # 08:00 UTC = 09:00 Madrid (CET)
-        assert local_dt.hour == 9
+        # 08:00 UTC = 10:00 Madrid (CEST = UTC+2)
+        assert local_dt.hour == 10
 
     def test_utc_to_madrid_summer(self):
         """Convert UTC to Madrid summer time."""
@@ -197,6 +197,75 @@ class TestGenerateCheckinSchedule:
         current = now_utc()
         for checkin_time in schedule:
             assert checkin_time > current
+
+    def test_milestone_single_at_50_percent(self):
+        """
+        Test requirement: 4h with milestones=1 -> 1 check-in at 50%
+        """
+        future = now_utc() + timedelta(hours=1)
+        departure = future
+        eta = future + timedelta(hours=4)
+        
+        schedule = generate_checkin_schedule(
+            departure_utc=departure,
+            eta_utc=eta,
+            mode="MILESTONE",
+            checkin_count=1,
+        )
+        
+        # 1 check-in at 50% = departure + 2h
+        assert len(schedule) == 1
+        expected_time = departure + timedelta(hours=2)
+        # Allow some tolerance (< 1 second)
+        assert abs((schedule[0] - expected_time).total_seconds()) < 1
+
+    def test_long_journey_interval_180min(self):
+        """
+        Test requirement: 32h with interval=180min -> expected number, none in past
+        """
+        future = now_utc() + timedelta(hours=1)
+        departure = future
+        eta = future + timedelta(hours=32)
+        
+        schedule = generate_checkin_schedule(
+            departure_utc=departure,
+            eta_utc=eta,
+            mode="INTERVAL",
+            interval_minutes=180,  # 3 hours
+            skip_first=True,
+        )
+        
+        # 32 hours / 3 hours = 10.67, so 10 intervals, minus skip_first
+        # Expected: check-ins at 3h, 6h, 9h, 12h, 15h, 18h, 21h, 24h, 27h, 30h
+        expected_count = 10
+        assert len(schedule) == expected_count
+        
+        # All should be in the future
+        current = now_utc()
+        for checkin_time in schedule:
+            assert checkin_time > current
+        
+        # Verify spacing is exactly 180 minutes
+        for i in range(1, len(schedule)):
+            diff = (schedule[i] - schedule[i-1]).total_seconds() / 60
+            assert diff == 180
+
+    def test_max_checkins_limit(self):
+        """Test that schedule generation respects max checkins limit."""
+        future = now_utc() + timedelta(hours=1)
+        departure = future
+        eta = future + timedelta(hours=1000)  # Very long journey
+        
+        schedule = generate_checkin_schedule(
+            departure_utc=departure,
+            eta_utc=eta,
+            mode="INTERVAL",
+            interval_minutes=30,  # Would generate many check-ins
+            skip_first=True,
+        )
+        
+        # Should be capped at 200
+        assert len(schedule) <= 200
 
 
 class TestDST:
