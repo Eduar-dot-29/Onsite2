@@ -3,7 +3,7 @@ import { useRouter } from "next/router";
 import Link from "next/link";
 import { Plus, Package, MapPin, Clock, AlertTriangle, Pencil, Trash2, CheckCircle } from "lucide-react";
 import AppLayout from "@/components/AppLayout";
-import { api, Shipment, extractErrorMessage } from "@/lib/api";
+import { api, Shipment } from "@/lib/api";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
@@ -55,7 +55,7 @@ export default function EnviosPage() {
       const data = await api.getShipments(statusParam as 'IN_TRANSIT' | 'DELAYED' | 'DELIVERED' | undefined);
       setShipments(data);
     } catch (err) {
-      setError(extractErrorMessage(err));
+      setError(err instanceof Error ? err.message : "Error al cargar envíos");
     } finally {
       setLoading(false);
     }

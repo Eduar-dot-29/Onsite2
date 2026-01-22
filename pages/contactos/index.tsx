@@ -3,7 +3,7 @@ import { useRouter } from "next/router";
 import Link from "next/link";
 import { Plus, User, MessageSquare, Phone } from "lucide-react";
 import AppLayout from "@/components/AppLayout";
-import { api, Contact, extractErrorMessage } from "@/lib/api";
+import { api, Contact } from "@/lib/api";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
@@ -32,7 +32,7 @@ export default function ContactosPage() {
       const data = await api.getContacts();
       setContacts(data);
     } catch (err) {
-      setError(extractErrorMessage(err));
+      setError(err instanceof Error ? err.message : "Error al cargar contactos");
     } finally {
       setLoading(false);
     }
