@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from datetime import timedelta
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -9,8 +8,10 @@ from sqlalchemy.orm import Session
 from app.core.db import get_session, utcnow
 from app.core.deps import get_current_user
 from app.core.enums import ShipmentStatus
+from app.core.timezone import now_utc
 from app.modules.shipments import models, schemas, service
 from app.modules.auth.models import User
+from app.modules.tracking import schemas as tracking_schemas
 
 
 router = APIRouter(prefix="/shipments", tags=["shipments"])
@@ -22,6 +23,12 @@ def create_shipment(
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
+    """
+    Create a new shipment with automatic check-in scheduling.
+    
+    The departure time should be provided in local timezone format.
+    Check-ins will be automatically scheduled based on the plan mode.
+    """
     shipment = service.create_shipment(session, current_user.tenant_id, data)
     session.commit()
     session.refresh(shipment)
@@ -47,13 +54,12 @@ def list_shipments(
         session.query(models.Shipment)
         .filter(
             models.Shipment.tenant_id == current_user.tenant_id,
-            models.Shipment.deleted_at.is_(None),  # Exclude soft-deleted
+            models.Shipment.deleted_at.is_(None),
         )
     )
     
     if status_filter:
         if status_filter == ShipmentStatus.IN_TRANSIT:
-            # Active shipments: ASSIGNED or IN_TRANSIT status
             query = query.filter(
                 models.Shipment.status.in_([
                     ShipmentStatus.ASSIGNED,
@@ -61,13 +67,12 @@ def list_shipments(
                 ])
             )
         elif status_filter == ShipmentStatus.DELAYED:
-            # Delayed: INCIDENT status OR past ETA but not delivered
-            now = utcnow()
+            now = now_utc()
             query = query.filter(
                 (models.Shipment.status == ShipmentStatus.INCIDENT) |
                 (models.Shipment.status == ShipmentStatus.DELAYED) |
                 (
-                    (models.Shipment.estimated_arrival_at < now) &
+                    (models.Shipment.eta_at_utc < now) &
                     (models.Shipment.status != ShipmentStatus.DELIVERED)
                 )
             )
@@ -99,6 +104,28 @@ def get_shipment(
     return shipment
 
 
+@router.get("/{shipment_id}/checkins", response_model=list[tracking_schemas.TrackingCheckinOut])
+def get_shipment_checkins(
+    shipment_id: UUID,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    """Get all scheduled check-ins for a shipment."""
+    shipment = (
+        session.query(models.Shipment)
+        .filter(
+            models.Shipment.id == shipment_id,
+            models.Shipment.tenant_id == current_user.tenant_id,
+            models.Shipment.deleted_at.is_(None),
+        )
+        .one_or_none()
+    )
+    if not shipment:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Shipment not found")
+    
+    return service.get_scheduled_checkins(session, current_user.tenant_id, shipment_id)
+
+
 @router.patch("/{shipment_id}", response_model=schemas.ShipmentOut)
 def update_shipment(
     shipment_id: UUID,
@@ -106,7 +133,11 @@ def update_shipment(
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
-    """Update a shipment. Only provided fields will be updated."""
+    """
+    Update a shipment.
+    
+    If time-related fields are updated, check-ins will be automatically rescheduled.
+    """
     shipment = (
         session.query(models.Shipment)
         .filter(
@@ -119,18 +150,7 @@ def update_shipment(
     if not shipment:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Shipment not found")
 
-    # Update only provided fields
-    update_data = data.model_dump(exclude_unset=True)
-    
-    for field, value in update_data.items():
-        if value is not None:
-            setattr(shipment, field, value)
-    
-    # Recalculate estimated_arrival_at if departure or eta changed
-    if data.planned_departure_at is not None or data.eta_hours is not None:
-        shipment.estimated_arrival_at = shipment.planned_departure_at + timedelta(hours=shipment.eta_hours)
-
-    session.add(shipment)
+    shipment = service.update_shipment(session, shipment, data)
     session.commit()
     session.refresh(shipment)
     return shipment
@@ -144,8 +164,7 @@ def delete_shipment(
 ):
     """
     Soft delete a shipment.
-    Sets deleted_at timestamp instead of actually deleting.
-    Related events and checkins are preserved for audit.
+    Cancels all pending check-ins and sets deleted_at timestamp.
     """
     shipment = (
         session.query(models.Shipment)
@@ -159,6 +178,9 @@ def delete_shipment(
     if not shipment:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Shipment not found")
 
+    # Cancel pending check-ins
+    service._cancel_pending_checkins(session, shipment)
+    
     shipment.deleted_at = utcnow()
     session.add(shipment)
     session.commit()
@@ -172,6 +194,11 @@ def assign_contact(
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
+    """
+    Assign a driver to a shipment.
+    
+    If check-ins haven't been scheduled yet, they will be generated automatically.
+    """
     shipment = (
         session.query(models.Shipment)
         .filter(
@@ -207,7 +234,11 @@ def mark_delivered(
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
-    """Mark a shipment as delivered."""
+    """
+    Mark a shipment as delivered.
+    
+    This will cancel all pending check-ins.
+    """
     shipment = (
         session.query(models.Shipment)
         .filter(
@@ -220,8 +251,7 @@ def mark_delivered(
     if not shipment:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Shipment not found")
 
-    shipment.status = ShipmentStatus.DELIVERED
-    session.add(shipment)
+    shipment = service.mark_delivered(session, current_user.tenant_id, shipment)
     session.commit()
     session.refresh(shipment)
     return shipment

@@ -18,6 +18,8 @@ interface User {
   created_at: string;
 }
 
+export type CheckinPlanMode = 'INTERVAL' | 'MILESTONE';
+
 export interface Shipment {
   id: string;
   tenant_id: string;
@@ -26,12 +28,26 @@ export interface Shipment {
   destination_text: string;
   destination_lat: number | null;
   destination_lon: number | null;
-  planned_departure_at: string;
-  eta_hours: number;
-  estimated_arrival_at: string;
-  status: 'pending' | 'in_transit' | 'delivered' | 'delayed' | 'cancelled';
+  // UTC times
+  departure_at_utc: string;
+  eta_at_utc: string;
+  // Timezone for display
+  timezone: string;
+  // Duration in minutes
+  estimated_duration_minutes: number;
+  // Check-in configuration
+  checkin_plan_mode: CheckinPlanMode;
+  checkin_interval_minutes: number | null;
+  checkin_count: number | null;
+  status: 'CREATED' | 'ASSIGNED' | 'IN_TRANSIT' | 'INCIDENT' | 'DELAYED' | 'DELIVERED';
   assigned_contact_id: string | null;
+  delivered_at_utc: string | null;
   created_at: string;
+  deleted_at: string | null;
+  // Legacy fields for backward compatibility
+  planned_departure_at?: string;
+  eta_hours?: number;
+  estimated_arrival_at?: string;
 }
 
 export interface ShipmentCreate {
@@ -40,8 +56,18 @@ export interface ShipmentCreate {
   destination_text: string;
   destination_lat?: number | null;
   destination_lon?: number | null;
-  planned_departure_at: string;
-  eta_hours: number;
+  // Local datetime (ISO format) - will be converted to UTC by backend
+  departure_at_local: string;
+  // IANA timezone
+  timezone?: string;
+  // Duration in minutes
+  estimated_duration_minutes: number;
+  // Check-in plan
+  checkin_plan_mode?: CheckinPlanMode;
+  checkin_interval_minutes?: number;
+  checkin_count?: number;
+  // Optional: assign driver at creation
+  assigned_contact_id?: string;
 }
 
 export interface Contact {
@@ -65,11 +91,18 @@ export interface ShipmentEvent {
 export interface TrackingCheckin {
   id: string;
   shipment_id: string;
-  due_at: string;
-  sent_at: string | null;
-  answered_at: string | null;
-  status: 'pending' | 'sent' | 'answered' | 'missed' | 'escalated';
+  scheduled_for_utc: string;
+  status: 'PENDING' | 'SENDING' | 'SENT' | 'ANSWERED' | 'MISSED' | 'ESCALATED' | 'FAILED' | 'CANCELLED';
+  locked_at_utc: string | null;
+  sent_at_utc: string | null;
+  answered_at_utc: string | null;
+  attempts: number;
+  last_error: string | null;
   created_at: string;
+  // Legacy fields
+  due_at?: string;
+  sent_at?: string | null;
+  answered_at?: string | null;
 }
 
 export interface ContactCreate {
@@ -91,12 +124,18 @@ const demoShipments: Shipment[] = [
     destination_text: 'Barcelona, España',
     destination_lat: 41.3851,
     destination_lon: 2.1734,
-    planned_departure_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-    eta_hours: 6,
-    estimated_arrival_at: new Date(Date.now() + 4 * 60 * 60 * 1000).toISOString(),
-    status: 'in_transit',
+    departure_at_utc: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+    eta_at_utc: new Date(Date.now() + 4 * 60 * 60 * 1000).toISOString(),
+    timezone: 'Europe/Madrid',
+    estimated_duration_minutes: 360,
+    checkin_plan_mode: 'INTERVAL',
+    checkin_interval_minutes: 30,
+    checkin_count: null,
+    status: 'IN_TRANSIT',
     assigned_contact_id: 'contact-001',
+    delivered_at_utc: null,
     created_at: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+    deleted_at: null,
   },
   {
     id: 'ship-002',
@@ -106,12 +145,18 @@ const demoShipments: Shipment[] = [
     destination_text: 'Sevilla, España',
     destination_lat: 37.3891,
     destination_lon: -5.9845,
-    planned_departure_at: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString(),
-    eta_hours: 8,
-    estimated_arrival_at: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
-    status: 'delayed',
+    departure_at_utc: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString(),
+    eta_at_utc: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
+    timezone: 'Europe/Madrid',
+    estimated_duration_minutes: 480,
+    checkin_plan_mode: 'INTERVAL',
+    checkin_interval_minutes: 60,
+    checkin_count: null,
+    status: 'DELAYED',
     assigned_contact_id: null,
+    delivered_at_utc: null,
     created_at: new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString(),
+    deleted_at: null,
   },
   {
     id: 'ship-003',
@@ -121,12 +166,18 @@ const demoShipments: Shipment[] = [
     destination_text: 'Zaragoza, España',
     destination_lat: 41.6488,
     destination_lon: -0.8891,
-    planned_departure_at: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(),
-    eta_hours: 4,
-    estimated_arrival_at: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString(),
-    status: 'delivered',
+    departure_at_utc: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(),
+    eta_at_utc: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString(),
+    timezone: 'Europe/Madrid',
+    estimated_duration_minutes: 240,
+    checkin_plan_mode: 'MILESTONE',
+    checkin_interval_minutes: null,
+    checkin_count: 3,
+    status: 'DELIVERED',
     assigned_contact_id: 'contact-002',
+    delivered_at_utc: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString(),
     created_at: new Date(Date.now() - 72 * 60 * 60 * 1000).toISOString(),
+    deleted_at: null,
   },
   {
     id: 'ship-004',
@@ -136,12 +187,18 @@ const demoShipments: Shipment[] = [
     destination_text: 'Madrid, España',
     destination_lat: 40.4168,
     destination_lon: -3.7038,
-    planned_departure_at: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
-    eta_hours: 5,
-    estimated_arrival_at: new Date(Date.now() + 7 * 60 * 60 * 1000).toISOString(),
-    status: 'pending',
+    departure_at_utc: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
+    eta_at_utc: new Date(Date.now() + 7 * 60 * 60 * 1000).toISOString(),
+    timezone: 'Europe/Madrid',
+    estimated_duration_minutes: 300,
+    checkin_plan_mode: 'INTERVAL',
+    checkin_interval_minutes: 30,
+    checkin_count: null,
+    status: 'CREATED',
     assigned_contact_id: null,
+    delivered_at_utc: null,
     created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+    deleted_at: null,
   },
 ];
 
@@ -488,6 +545,8 @@ class ApiClient {
 
   async createShipment(data: ShipmentCreate): Promise<Shipment> {
     if (DEMO_MODE) {
+      const departureUtc = new Date(data.departure_at_local).toISOString();
+      const etaUtc = new Date(new Date(data.departure_at_local).getTime() + data.estimated_duration_minutes * 60 * 1000).toISOString();
       const newShipment: Shipment = {
         id: `ship-${Date.now()}`,
         tenant_id: DEMO_TENANT_ID,
@@ -496,12 +555,18 @@ class ApiClient {
         destination_text: data.destination_text,
         destination_lat: data.destination_lat || null,
         destination_lon: data.destination_lon || null,
-        planned_departure_at: data.planned_departure_at,
-        eta_hours: data.eta_hours,
-        estimated_arrival_at: new Date(new Date(data.planned_departure_at).getTime() + data.eta_hours * 60 * 60 * 1000).toISOString(),
-        status: 'pending',
-        assigned_contact_id: null,
+        departure_at_utc: departureUtc,
+        eta_at_utc: etaUtc,
+        timezone: data.timezone || 'Europe/Madrid',
+        estimated_duration_minutes: data.estimated_duration_minutes,
+        checkin_plan_mode: data.checkin_plan_mode || 'INTERVAL',
+        checkin_interval_minutes: data.checkin_interval_minutes || 30,
+        checkin_count: data.checkin_count || null,
+        status: 'CREATED',
+        assigned_contact_id: data.assigned_contact_id || null,
+        delivered_at_utc: null,
         created_at: new Date().toISOString(),
+        deleted_at: null,
       };
       this.demoShipments.unshift(newShipment);
       this.saveDemoData();

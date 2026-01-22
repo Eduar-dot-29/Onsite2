@@ -45,8 +45,9 @@ export default function EditarEnvioPage() {
       setCustomerName(shipment.customer_name);
       setOriginText(shipment.origin_text);
       setDestinationText(shipment.destination_text);
-      setPlannedDeparture(format(new Date(shipment.planned_departure_at), "yyyy-MM-dd'T'HH:mm"));
-      setEtaHours(String(shipment.eta_hours));
+      // Use new UTC field
+      setPlannedDeparture(format(new Date(shipment.departure_at_utc), "yyyy-MM-dd'T'HH:mm"));
+      setEtaHours(String(Math.round(shipment.estimated_duration_minutes / 60)));
       setStatus(shipment.status);
       setAssignedContactId(shipment.assigned_contact_id || "");
       setContacts(contactList);
