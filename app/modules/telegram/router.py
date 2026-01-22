@@ -216,19 +216,20 @@ async def telegram_webhook(
                         .one_or_none()
                     )
                     if shipment:
-                        await provider.send_incident_delay_options(contact, shipment)
+                        # Pass checkin_id to maintain context for multi-shipment drivers
+                        await provider.send_incident_delay_options(contact, shipment, message.checkin_id)
                 return {"ok": True}
 
-            # Handle delay selection
+            # Handle delay selection - now uses checkin_id for multi-shipment support
             if message.action in (
                 MessageAction.DELAY_30,
                 MessageAction.DELAY_60,
                 MessageAction.DELAY_120,
                 MessageAction.DELAY_180,
-            ) and message.shipment_id:
-                # Check if delay already set for this incident
-                existing_state = tracking_service.find_incident_by_shipment(
-                    session, tenant_id, message.shipment_id, contact.id
+            ) and message.checkin_id:
+                # Check if delay already set for this incident using checkin_id
+                existing_state = tracking_service.find_incident_by_checkin(
+                    session, tenant_id, message.checkin_id, contact.id
                 )
                 if not existing_state or existing_state.state != IncidentState.WAITING_DELAY:
                     if message.callback_query_id:
@@ -236,10 +237,10 @@ async def telegram_webhook(
                     return {"ok": True}
 
                 delay_minutes = _delay_action_to_minutes(message.action)
-                state = tracking_service.set_incident_delay(
+                state = tracking_service.set_incident_delay_by_checkin(
                     session,
                     tenant_id=tenant_id,
-                    shipment_id=message.shipment_id,
+                    checkin_id=message.checkin_id,
                     contact_id=contact.id,
                     delay_minutes=delay_minutes,
                 )
@@ -266,7 +267,8 @@ async def telegram_webhook(
                         .one_or_none()
                     )
                     if shipment:
-                        await provider.send_request_location(contact, shipment)
+                        # Pass checkin_id to maintain context
+                        await provider.send_request_location(contact, shipment, state.checkin_id)
                 return {"ok": True}
 
         if message.type == MessageType.LOCATION and message.location:

@@ -219,18 +219,22 @@ def start_incident(
     return state
 
 
-def set_incident_delay(
+def set_incident_delay_by_checkin(
     session: Session,
     tenant_id,
-    shipment_id,
+    checkin_id,
     contact_id,
     delay_minutes: int,
 ) -> models.ShipmentIncidentState | None:
+    """
+    Set delay for an incident using checkin_id.
+    This ensures correct context for drivers with multiple shipments.
+    """
     state = (
         session.query(models.ShipmentIncidentState)
         .filter(
             models.ShipmentIncidentState.tenant_id == tenant_id,
-            models.ShipmentIncidentState.shipment_id == shipment_id,
+            models.ShipmentIncidentState.checkin_id == checkin_id,
             models.ShipmentIncidentState.contact_id == contact_id,
             models.ShipmentIncidentState.state == IncidentState.WAITING_DELAY,
         )
@@ -247,9 +251,9 @@ def set_incident_delay(
     record_event(
         session,
         tenant_id=tenant_id,
-        shipment_id=shipment_id,
+        shipment_id=state.shipment_id,
         event_type=EventType.DELAY_REPORTED,
-        payload={"delay_minutes": delay_minutes},
+        payload={"delay_minutes": delay_minutes, "checkin_id": str(checkin_id)},
     )
     return state
 
@@ -335,6 +339,10 @@ def recalculate_route_and_eta(
 def find_incident_waiting_location(
     session: Session, tenant_id, contact_id
 ) -> models.ShipmentIncidentState | None:
+    """
+    Find the most recent incident waiting for location from a contact.
+    Note: For multi-shipment drivers, this returns the most recently updated incident.
+    """
     return (
         session.query(models.ShipmentIncidentState)
         .filter(
@@ -343,6 +351,21 @@ def find_incident_waiting_location(
             models.ShipmentIncidentState.state == IncidentState.WAITING_LOCATION,
         )
         .order_by(models.ShipmentIncidentState.updated_at.desc())
+        .first()
+    )
+
+
+def find_incident_by_checkin(
+    session: Session, tenant_id, checkin_id, contact_id
+) -> models.ShipmentIncidentState | None:
+    """Find an incident state by checkin_id - ensures correct context for multi-shipment drivers."""
+    return (
+        session.query(models.ShipmentIncidentState)
+        .filter(
+            models.ShipmentIncidentState.tenant_id == tenant_id,
+            models.ShipmentIncidentState.checkin_id == checkin_id,
+            models.ShipmentIncidentState.contact_id == contact_id,
+        )
         .one_or_none()
     )
 

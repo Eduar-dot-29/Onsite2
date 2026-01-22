@@ -24,42 +24,68 @@ class TelegramProvider(MessagingProvider):
             self._bot = Bot(settings.telegram_bot_token)
 
     async def send_checkin(self, contact, shipment, checkin_id) -> str | None:
+        """
+        Send check-in message with buttons.
+        Each button includes checkin_id for multi-shipment context.
+        """
         if not self._bot or not contact.telegram_chat_id:
             return None
-        text = f"Envío {shipment.id}: {shipment.origin_text} → {shipment.destination_text}. ¿Estado actual?"
+        text = (
+            f"📦 *{shipment.customer_name}*\n"
+            f"Ruta: {shipment.origin_text} → {shipment.destination_text}\n\n"
+            f"¿Estado actual?"
+        )
         keyboard = InlineKeyboardMarkup(
             [
                 [
                     InlineKeyboardButton("✅ Todo OK", callback_data=f"CHECKIN_OK:{checkin_id}"),
+                ],
+                [
                     InlineKeyboardButton("⚠️ Avería", callback_data=f"INCIDENT_BREAKDOWN:{checkin_id}"),
                     InlineKeyboardButton("🚦 Tráfico", callback_data=f"INCIDENT_TRAFFIC:{checkin_id}"),
                 ]
             ]
         )
-        message = await self._bot.send_message(chat_id=contact.telegram_chat_id, text=text, reply_markup=keyboard)
+        message = await self._bot.send_message(
+            chat_id=contact.telegram_chat_id, 
+            text=text, 
+            reply_markup=keyboard,
+            parse_mode="Markdown"
+        )
         return str(message.message_id)
 
-    async def send_incident_delay_options(self, contact, shipment) -> str | None:
+    async def send_incident_delay_options(self, contact, shipment, checkin_id) -> str | None:
+        """
+        Send delay options after an incident is reported.
+        Uses checkin_id to maintain context for multi-shipment drivers.
+        """
         if not self._bot or not contact.telegram_chat_id:
             return None
-        text = "Recibido. Indica retraso estimado:"
+        text = f"📦 {shipment.customer_name}\nRecibido. Indica retraso estimado:"
         keyboard = InlineKeyboardMarkup(
             [
                 [
-                    InlineKeyboardButton("<1h", callback_data=f"DELAY_30:{shipment.id}"),
-                    InlineKeyboardButton("+1h", callback_data=f"DELAY_60:{shipment.id}"),
-                    InlineKeyboardButton("+2h", callback_data=f"DELAY_120:{shipment.id}"),
-                    InlineKeyboardButton("+3h o más", callback_data=f"DELAY_180:{shipment.id}"),
+                    InlineKeyboardButton("<1h", callback_data=f"DELAY_30:{checkin_id}"),
+                    InlineKeyboardButton("+1h", callback_data=f"DELAY_60:{checkin_id}"),
+                ],
+                [
+                    InlineKeyboardButton("+2h", callback_data=f"DELAY_120:{checkin_id}"),
+                    InlineKeyboardButton("+3h o más", callback_data=f"DELAY_180:{checkin_id}"),
                 ]
             ]
         )
         message = await self._bot.send_message(chat_id=contact.telegram_chat_id, text=text, reply_markup=keyboard)
         return str(message.message_id)
 
-    async def send_request_location(self, contact, shipment) -> str | None:
+    async def send_request_location(self, contact, shipment, checkin_id) -> str | None:
+        """
+        Request location after delay is set.
+        Uses checkin_id to maintain context for multi-shipment drivers.
+        """
         if not self._bot or not contact.telegram_chat_id:
             return None
-        text = "Ahora envía tu ubicación actual para recalcular la ETA (📍Enviar ubicación)."
+        text = f"📦 {shipment.customer_name}\nAhora envía tu ubicación actual para recalcular la ETA."
+        # Store checkin_id in reply keyboard is not possible, so we track it via incident_state
         keyboard = ReplyKeyboardMarkup(
             [[KeyboardButton("📍Enviar ubicación", request_location=True)]],
             resize_keyboard=True,
@@ -264,20 +290,29 @@ class TelegramProvider(MessagingProvider):
 
 
 def _parse_callback(data: str):
+    """
+    Parse callback_data from inline buttons.
+    
+    Returns: (action, shipment_id, checkin_id)
+    
+    For status buttons (OK/BREAKDOWN/TRAFFIC): checkin_id is set
+    For delay buttons: checkin_id is set (changed from shipment_id for multi-shipment support)
+    """
     if data.startswith("CHECKIN_OK:"):
         return MessageAction.OK, None, _safe_uuid(data.split(":", 1)[1])
     if data.startswith("INCIDENT_BREAKDOWN:"):
         return MessageAction.BREAKDOWN, None, _safe_uuid(data.split(":", 1)[1])
     if data.startswith("INCIDENT_TRAFFIC:"):
         return MessageAction.TRAFFIC, None, _safe_uuid(data.split(":", 1)[1])
+    # Delay buttons now use checkin_id instead of shipment_id
     if data.startswith("DELAY_30:"):
-        return MessageAction.DELAY_30, _safe_uuid(data.split(":", 1)[1]), None
+        return MessageAction.DELAY_30, None, _safe_uuid(data.split(":", 1)[1])
     if data.startswith("DELAY_60:"):
-        return MessageAction.DELAY_60, _safe_uuid(data.split(":", 1)[1]), None
+        return MessageAction.DELAY_60, None, _safe_uuid(data.split(":", 1)[1])
     if data.startswith("DELAY_120:"):
-        return MessageAction.DELAY_120, _safe_uuid(data.split(":", 1)[1]), None
+        return MessageAction.DELAY_120, None, _safe_uuid(data.split(":", 1)[1])
     if data.startswith("DELAY_180:"):
-        return MessageAction.DELAY_180, _safe_uuid(data.split(":", 1)[1]), None
+        return MessageAction.DELAY_180, None, _safe_uuid(data.split(":", 1)[1])
     return None, None, None
 
 
