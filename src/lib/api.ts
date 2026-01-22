@@ -868,6 +868,12 @@ class ApiClient {
   }
 
   async sendManualCheckin(shipmentId: string): Promise<TrackingCheckin> {
+    if (DEMO_MODE) {
+      // In demo mode, simulate sending a check-in
+      const checkin = await this.simulateSendCheckin(shipmentId);
+      if (checkin) return checkin;
+      throw new Error('No se pudo enviar el check-in en modo demo');
+    }
     return this.request<TrackingCheckin>(`/tracking/shipments/${shipmentId}/send-checkin`, {
       method: 'POST',
     });

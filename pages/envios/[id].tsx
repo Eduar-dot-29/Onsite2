@@ -23,6 +23,14 @@ import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
 const statusConfig: Record<string, { label: string; color: string; bg: string }> = {
+  // Uppercase (new format)
+  CREATED: { label: "Pendiente", color: "text-warning", bg: "bg-warning/10" },
+  ASSIGNED: { label: "Asignado", color: "text-blue-400", bg: "bg-blue-400/10" },
+  IN_TRANSIT: { label: "En Tránsito", color: "text-primary", bg: "bg-primary/10" },
+  INCIDENT: { label: "Incidencia", color: "text-orange-400", bg: "bg-orange-400/10" },
+  DELAYED: { label: "Retrasado", color: "text-destructive", bg: "bg-destructive/10" },
+  DELIVERED: { label: "Entregado", color: "text-success", bg: "bg-success/10" },
+  // Lowercase fallbacks (old format)
   pending: { label: "Pendiente", color: "text-warning", bg: "bg-warning/10" },
   in_transit: { label: "En Tránsito", color: "text-primary", bg: "bg-primary/10" },
   delivered: { label: "Entregado", color: "text-success", bg: "bg-success/10" },
