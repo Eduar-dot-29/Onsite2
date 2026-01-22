@@ -344,28 +344,37 @@ const demoCheckins: Record<string, TrackingCheckin[]> = {
     {
       id: 'chk-001',
       shipment_id: 'ship-001',
-      due_at: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
-      sent_at: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
-      answered_at: new Date(Date.now() - 3.9 * 60 * 60 * 1000).toISOString(),
-      status: 'answered',
+      scheduled_for_utc: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
+      status: 'ANSWERED',
+      locked_at_utc: null,
+      sent_at_utc: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
+      answered_at_utc: new Date(Date.now() - 3.9 * 60 * 60 * 1000).toISOString(),
+      attempts: 1,
+      last_error: null,
       created_at: new Date(Date.now() - 22 * 60 * 60 * 1000).toISOString(),
     },
     {
       id: 'chk-002',
       shipment_id: 'ship-001',
-      due_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-      sent_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-      answered_at: null,
-      status: 'sent',
+      scheduled_for_utc: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+      status: 'SENT',
+      locked_at_utc: null,
+      sent_at_utc: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+      answered_at_utc: null,
+      attempts: 1,
+      last_error: null,
       created_at: new Date(Date.now() - 22 * 60 * 60 * 1000).toISOString(),
     },
     {
       id: 'chk-003',
       shipment_id: 'ship-001',
-      due_at: new Date(Date.now() + 1 * 60 * 60 * 1000).toISOString(),
-      sent_at: null,
-      answered_at: null,
-      status: 'pending',
+      scheduled_for_utc: new Date(Date.now() + 1 * 60 * 60 * 1000).toISOString(),
+      status: 'PENDING',
+      locked_at_utc: null,
+      sent_at_utc: null,
+      answered_at_utc: null,
+      attempts: 0,
+      last_error: null,
       created_at: new Date(Date.now() - 22 * 60 * 60 * 1000).toISOString(),
     },
   ],
@@ -524,9 +533,9 @@ class ApiClient {
     if (DEMO_MODE) {
       if (!statusFilter) return this.demoShipments;
       return this.demoShipments.filter(s => {
-        if (statusFilter === 'IN_TRANSIT') return s.status === 'in_transit' || s.status === 'pending';
-        if (statusFilter === 'DELAYED') return s.status === 'delayed';
-        if (statusFilter === 'DELIVERED') return s.status === 'delivered';
+        if (statusFilter === 'IN_TRANSIT') return s.status === 'IN_TRANSIT' || s.status === 'ASSIGNED';
+        if (statusFilter === 'DELAYED') return s.status === 'DELAYED' || s.status === 'INCIDENT';
+        if (statusFilter === 'DELIVERED') return s.status === 'DELIVERED';
         return true;
       });
     }
@@ -596,12 +605,19 @@ class ApiClient {
     if (DEMO_MODE) {
       const shipment = this.demoShipments.find(s => s.id === shipmentId);
       if (!shipment) throw new Error('Envío no encontrado');
-      Object.assign(shipment, data);
-      if (data.planned_departure_at && data.eta_hours) {
-        shipment.estimated_arrival_at = new Date(
-          new Date(data.planned_departure_at).getTime() + data.eta_hours * 60 * 60 * 1000
+      if (data.customer_name) shipment.customer_name = data.customer_name;
+      if (data.origin_text) shipment.origin_text = data.origin_text;
+      if (data.destination_text) shipment.destination_text = data.destination_text;
+      if (data.departure_at_local) {
+        shipment.departure_at_utc = new Date(data.departure_at_local).toISOString();
+      }
+      if (data.estimated_duration_minutes) {
+        shipment.estimated_duration_minutes = data.estimated_duration_minutes;
+        shipment.eta_at_utc = new Date(
+          new Date(shipment.departure_at_utc).getTime() + data.estimated_duration_minutes * 60 * 1000
         ).toISOString();
       }
+      if (data.timezone) shipment.timezone = data.timezone;
       this.saveDemoData();
       return shipment;
     }
@@ -628,7 +644,7 @@ class ApiClient {
     if (DEMO_MODE) {
       const shipment = this.demoShipments.find(s => s.id === shipmentId);
       if (!shipment) throw new Error('Envío no encontrado');
-      shipment.status = 'delivered';
+      shipment.status = 'DELIVERED';
       this.saveDemoData();
       return shipment;
     }
@@ -711,8 +727,8 @@ class ApiClient {
     // Update checkin status
     const checkin = checkins[shipmentId].find(c => c.id === checkinId);
     if (checkin) {
-      checkin.status = 'answered';
-      checkin.answered_at = new Date().toISOString();
+      checkin.status = 'ANSWERED';
+      checkin.answered_at_utc = new Date().toISOString();
     }
 
     // Add event
@@ -729,7 +745,7 @@ class ApiClient {
     if (response !== 'ok') {
       const shipment = this.demoShipments.find(s => s.id === shipmentId);
       if (shipment) {
-        shipment.status = 'delayed';
+        shipment.status = 'DELAYED';
         this.saveDemoData();
       }
     }
@@ -784,7 +800,7 @@ class ApiClient {
     const oldEta = shipment.estimated_arrival_at;
     const newEta = new Date(Date.now() + (delayMinutes + 60) * 60 * 1000).toISOString();
     shipment.estimated_arrival_at = newEta;
-    shipment.status = 'in_transit';
+    shipment.status = 'IN_TRANSIT';
 
     // Add events
     events[shipmentId].push({
@@ -834,10 +850,13 @@ class ApiClient {
     const newCheckin: TrackingCheckin = {
       id: `chk-${Date.now()}`,
       shipment_id: shipmentId,
-      due_at: new Date().toISOString(),
-      sent_at: new Date().toISOString(),
-      answered_at: null,
-      status: 'sent',
+      scheduled_for_utc: new Date().toISOString(),
+      status: 'SENT',
+      locked_at_utc: null,
+      sent_at_utc: new Date().toISOString(),
+      answered_at_utc: null,
+      attempts: 1,
+      last_error: null,
       created_at: new Date().toISOString(),
     };
 

@@ -232,13 +232,13 @@ export default function EnvioDetailPage() {
                     <div className="flex items-center justify-between">
                       <span className="text-slate-400">Salida</span>
                       <span className="text-white">
-                        {format(new Date(shipment.planned_departure_at), "dd MMM, HH:mm", { locale: es })}
+                        {format(new Date(shipment.departure_at_utc), "dd MMM, HH:mm", { locale: es })}
                       </span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-slate-400">ETA</span>
                       <span className="text-white font-medium">
-                        {format(new Date(shipment.estimated_arrival_at), "dd MMM, HH:mm", { locale: es })}
+                        {format(new Date(shipment.eta_at_utc), "dd MMM, HH:mm", { locale: es })}
                       </span>
                     </div>
                     <div className="flex items-center justify-between">
@@ -381,7 +381,7 @@ export default function EnvioDetailPage() {
                           {checkins.map((checkin) => (
                             <div key={checkin.id} className="flex items-center justify-between text-xs p-2 rounded bg-white/5">
                               <span className="text-slate-400">
-                                {format(new Date(checkin.due_at), "dd/MM HH:mm", { locale: es })}
+                                {format(new Date(checkin.scheduled_for_utc), "dd/MM HH:mm", { locale: es })}
                               </span>
                               <CheckinStatusBadge status={checkin.status} />
                             </div>

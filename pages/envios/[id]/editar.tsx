@@ -68,8 +68,8 @@ export default function EditarEnvioPage() {
         customer_name: customerName,
         origin_text: originText,
         destination_text: destinationText,
-        planned_departure_at: new Date(plannedDeparture).toISOString(),
-        eta_hours: parseInt(etaHours, 10),
+        departure_at_local: plannedDeparture,
+        estimated_duration_minutes: parseInt(etaHours, 10) * 60,
       });
 
       router.push(`/envios/${id}`);
