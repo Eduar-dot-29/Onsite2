@@ -2,9 +2,8 @@
 Celery configuration for background task processing.
 
 Tasks:
-- process_due_checkins: Runs every minute to send due check-ins
-- cleanup_stale_locks: Runs every 2 minutes to recover stuck check-ins
-- mark_silence_and_escalate: Runs every 5 minutes to detect non-responsive drivers
+- process_due_checkins: Runs every minute to send due check-ins (v2)
+- mark_silence_and_escalate: Runs every minute to detect silence (v2)
 """
 from __future__ import annotations
 
@@ -35,20 +34,10 @@ celery_app.conf.update(
             "task": "app.workers.tasks.process_due_checkins",
             "schedule": 60.0,  # 1 minute
         },
-        # Clean up stale locks every 2 minutes
-        "cleanup_stale_locks": {
-            "task": "app.workers.tasks.cleanup_stale_locks",
-            "schedule": 120.0,  # 2 minutes
-        },
-        # Check for silence and escalate every 5 minutes
+        # Check for silence and escalate every minute (tolerance is configurable)
         "mark_silence_and_escalate": {
             "task": "app.workers.tasks.mark_silence_and_escalate",
-            "schedule": 300.0,  # 5 minutes
-        },
-        # Legacy task name (backward compatibility)
-        "send_due_checkins": {
-            "task": "app.workers.tasks.send_due_checkins",
-            "schedule": 60.0,
+            "schedule": 60.0,  # 1 minute
         },
     },
     # Task execution settings

@@ -21,6 +21,12 @@ class Settings(BaseSettings):
     telegram_bot_token: str | None = None
     telegram_webhook_secret: str | None = None
     telegram_webhook_url: str | None = None
+    # Comma-separated Telegram chat ids to receive admin alerts (e.g. "123,456")
+    telegram_admin_chat_ids: str | None = None
+
+    # Worker automation (v2)
+    silence_tolerance_minutes: int = 30
+    average_speed_kmh: int = 80
 
     routing_provider: str = "stub"
     routing_api_key: str | None = None
