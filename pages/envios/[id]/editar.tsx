@@ -1,9 +1,9 @@
 import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/router";
 import Link from "next/link";
-import { ArrowLeft, Save, Settings, Sparkles, AlertCircle } from "lucide-react";
+import { ArrowLeft, Save, Settings, AlertCircle } from "lucide-react";
 import AppLayout from "@/components/AppLayout";
-import { api, Contact, CheckinPlanMode } from "@/lib/api";
+import { api, CheckinType, Contact, ShipmentDetail, ShipmentStatus } from "@/lib/api";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
@@ -21,26 +21,21 @@ export default function EditarEnvioPage() {
   const [contacts, setContacts] = useState<Contact[]>([]);
   
   // Form state
-  const [customerName, setCustomerName] = useState("");
-  const [originText, setOriginText] = useState("");
-  const [destinationText, setDestinationText] = useState("");
+  const [reference, setReference] = useState("");
+  const [origin, setOrigin] = useState("");
+  const [destination, setDestination] = useState("");
   const [plannedDeparture, setPlannedDeparture] = useState("");
   const [durationMinutes, setDurationMinutes] = useState(180);
   const [timezone, setTimezone] = useState("Europe/Madrid");
-  const [status, setStatus] = useState("CREATED");
+  const [status, setStatus] = useState<ShipmentStatus>("PENDING");
   const [assignedContactId, setAssignedContactId] = useState<string>("");
   
   // Check-in plan state
-  const [checkinPlanMode, setCheckinPlanMode] = useState<CheckinPlanMode>("INTERVAL");
+  const [checkinPlanMode, setCheckinPlanMode] = useState<CheckinType>("INTERVAL");
   const [checkinIntervalMinutes, setCheckinIntervalMinutes] = useState(30);
   const [checkinCount, setCheckinCount] = useState(3);
 
   useEffect(() => {
-    if (!api.isAuthenticated()) {
-      router.push("/login");
-      return;
-    }
-
     if (id) {
       loadData();
     }
@@ -49,24 +44,30 @@ export default function EditarEnvioPage() {
   const loadData = async () => {
     try {
       const [shipment, contactList] = await Promise.all([
-        api.getShipment(id as string),
+        api.getShipmentDetail(id as string),
         api.getContacts(),
       ]);
       
-      setCustomerName(shipment.customer_name);
-      setOriginText(shipment.origin_text);
-      setDestinationText(shipment.destination_text);
-      // Use new UTC field
-      setPlannedDeparture(format(new Date(shipment.departure_at_utc), "yyyy-MM-dd'T'HH:mm"));
-      setDurationMinutes(shipment.estimated_duration_minutes);
-      setTimezone(shipment.timezone || "Europe/Madrid");
-      setStatus(shipment.status);
-      setAssignedContactId(shipment.assigned_contact_id || "");
+      const s = shipment as ShipmentDetail;
+      setReference(s.reference);
+      setOrigin(s.origin);
+      setDestination(s.destination);
+      setPlannedDeparture(format(new Date(s.departure_at_utc), "yyyy-MM-dd'T'HH:mm"));
+      // Estimate duration from departure->eta
+      const dur = Math.max(
+        1,
+        Math.round(
+          (new Date(s.eta_at_utc).getTime() - new Date(s.departure_at_utc).getTime()) / 60000
+        )
+      );
+      setDurationMinutes(dur);
+      setTimezone(s.timezone || "Europe/Madrid");
+      setStatus(s.status);
+      setAssignedContactId(s.driver_id || "");
       
       // Load check-in plan
-      setCheckinPlanMode(shipment.checkin_plan_mode || "INTERVAL");
-      setCheckinIntervalMinutes(shipment.checkin_interval_minutes || 30);
-      setCheckinCount(shipment.checkin_count || 3);
+      setCheckinPlanMode(s.checkin_type || "INTERVAL");
+      setCheckinIntervalMinutes(s.interval_minutes || 30);
       
       setContacts(contactList);
     } catch (err) {
@@ -138,15 +139,14 @@ export default function EditarEnvioPage() {
 
     try {
       await api.updateShipment(id as string, {
-        customer_name: customerName,
-        origin_text: originText,
-        destination_text: destinationText,
+        reference,
+        origin,
+        destination,
         departure_at_local: plannedDeparture,
         estimated_duration_minutes: durationMinutes,
         timezone,
-        checkin_plan_mode: checkinPlanMode,
-        checkin_interval_minutes: checkinPlanMode === "INTERVAL" ? checkinIntervalMinutes : undefined,
-        checkin_count: checkinPlanMode === "MILESTONE" ? checkinCount : undefined,
+        checkin_type: checkinPlanMode,
+        interval_minutes: checkinPlanMode === "INTERVAL" ? checkinIntervalMinutes : null,
       });
 
       router.push(`/envios/${id}`);
@@ -206,8 +206,8 @@ export default function EditarEnvioPage() {
                 <input
                   id="customer"
                   type="text"
-                  value={customerName}
-                  onChange={(e) => setCustomerName(e.target.value)}
+                  value={reference}
+                  onChange={(e) => setReference(e.target.value)}
                   className="w-full rounded-lg border border-border bg-background px-4 py-2.5 text-white placeholder:text-slate-500 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                   placeholder="Ej: Mercancías García"
                   required
@@ -223,8 +223,8 @@ export default function EditarEnvioPage() {
                   <input
                     id="origin"
                     type="text"
-                    value={originText}
-                    onChange={(e) => setOriginText(e.target.value)}
+                    value={origin}
+                    onChange={(e) => setOrigin(e.target.value)}
                     className="w-full rounded-lg border border-border bg-background px-4 py-2.5 text-white placeholder:text-slate-500 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                     placeholder="Ej: Madrid"
                     required
@@ -237,8 +237,8 @@ export default function EditarEnvioPage() {
                   <input
                     id="destination"
                     type="text"
-                    value={destinationText}
-                    onChange={(e) => setDestinationText(e.target.value)}
+                    value={destination}
+                    onChange={(e) => setDestination(e.target.value)}
                     className="w-full rounded-lg border border-border bg-background px-4 py-2.5 text-white placeholder:text-slate-500 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                     placeholder="Ej: Barcelona"
                     required
@@ -288,12 +288,11 @@ export default function EditarEnvioPage() {
                   Estado actual
                 </label>
                 <div className="text-slate-400 text-sm">
-                  {status === 'CREATED' && 'Creado'}
-                  {status === 'ASSIGNED' && 'Asignado'}
-                  {status === 'IN_TRANSIT' && 'En Tránsito'}
-                  {status === 'INCIDENT' && 'Incidencia'}
-                  {status === 'DELAYED' && 'Retrasado'}
-                  {status === 'DELIVERED' && 'Entregado'}
+                  {status === "PENDING" && "Pendiente"}
+                  {status === "IN_TRANSIT" && "En Tránsito"}
+                  {status === "DELAYED" && "Retrasado"}
+                  {status === "SILENCE" && "Silencio"}
+                  {status === "DELIVERED" && "Entregado"}
                   <span className="ml-2 text-slate-500">
                     (El estado se actualiza automáticamente según el flujo del envío)
                   </span>

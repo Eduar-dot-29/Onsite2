@@ -3,7 +3,7 @@ import { useRouter } from "next/router";
 import Link from "next/link";
 import { ArrowLeft, Clock, Calendar, Settings, Sparkles, AlertCircle } from "lucide-react";
 import AppLayout from "@/components/AppLayout";
-import { api, ShipmentCreate, CheckinPlanMode } from "@/lib/api";
+import { api, ShipmentCreate, CheckinType } from "@/lib/api";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
@@ -37,7 +37,7 @@ export default function NuevoEnvioPage() {
   const [departureAtLocal, setDepartureAtLocal] = useState("");
   const [timezone, setTimezone] = useState("Europe/Madrid");
   const [durationMinutes, setDurationMinutes] = useState(180); // 3 hours default
-  const [checkinPlanMode, setCheckinPlanMode] = useState<CheckinPlanMode>("INTERVAL");
+  const [checkinPlanMode, setCheckinPlanMode] = useState<CheckinType>("INTERVAL");
   const [checkinIntervalMinutes, setCheckinIntervalMinutes] = useState(30);
   const [checkinCount, setCheckinCount] = useState(3);
 
@@ -48,17 +48,26 @@ export default function NuevoEnvioPage() {
 
     try {
       const data: ShipmentCreate = {
-        customer_name: customerName,
-        origin_text: originText,
-        destination_text: destinationText,
-        destination_lat: destinationLat,
-        destination_lon: destinationLon,
+        reference: customerName,
+        origin: originText,
+        destination: destinationText,
         departure_at_local: departureAtLocal,
         timezone,
         estimated_duration_minutes: durationMinutes,
-        checkin_plan_mode: checkinPlanMode,
-        checkin_interval_minutes: checkinPlanMode === "INTERVAL" ? checkinIntervalMinutes : undefined,
-        checkin_count: checkinPlanMode === "MILESTONE" ? checkinCount : undefined,
+        checkin_type: checkinPlanMode,
+        interval_minutes: checkinPlanMode === "INTERVAL" ? checkinIntervalMinutes : undefined,
+        milestones:
+          destinationLat !== null && destinationLon !== null
+            ? [
+                {
+                  name: "Destino",
+                  latitude: destinationLat,
+                  longitude: destinationLon,
+                  radius_km: 1.0,
+                  is_completed: false,
+                },
+              ]
+            : undefined,
       };
 
       await api.createShipment(data);
@@ -467,7 +476,7 @@ export default function NuevoEnvioPage() {
                   )}
                 </div>
                 <p className="text-xs text-slate-500 mt-2">
-                  Los check-ins se enviarán automáticamente al conductor asignado.
+                  En modo "Hitos", los check-ins automáticos por intervalo no se envían. Usa milestones/geofencing.
                 </p>
               </div>
             )}

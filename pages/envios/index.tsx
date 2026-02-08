@@ -1,24 +1,18 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import Link from "next/link";
-import { Plus, Package, MapPin, Clock, AlertTriangle, Pencil, Trash2, CheckCircle } from "lucide-react";
+import { Plus, Package, MapPin, AlertTriangle, Pencil, Trash2, CheckCircle } from "lucide-react";
 import AppLayout from "@/components/AppLayout";
 import { api, Shipment } from "@/lib/api";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
 const statusConfig: Record<string, { label: string; color: string; bg: string }> = {
-  CREATED: { label: "Creado", color: "text-slate-400", bg: "bg-slate-400/10" },
-  ASSIGNED: { label: "Asignado", color: "text-warning", bg: "bg-warning/10" },
+  PENDING: { label: "Pendiente", color: "text-slate-400", bg: "bg-slate-400/10" },
   IN_TRANSIT: { label: "En Tránsito", color: "text-primary", bg: "bg-primary/10" },
-  INCIDENT: { label: "Incidencia", color: "text-orange-400", bg: "bg-orange-400/10" },
   DELAYED: { label: "Retrasado", color: "text-destructive", bg: "bg-destructive/10" },
+  SILENCE: { label: "Silencio", color: "text-warning", bg: "bg-warning/10" },
   DELIVERED: { label: "Entregado", color: "text-success", bg: "bg-success/10" },
-  // Fallback for old lowercase values
-  pending: { label: "Pendiente", color: "text-warning", bg: "bg-warning/10" },
-  in_transit: { label: "En Tránsito", color: "text-primary", bg: "bg-primary/10" },
-  delivered: { label: "Entregado", color: "text-success", bg: "bg-success/10" },
-  delayed: { label: "Retrasado", color: "text-destructive", bg: "bg-destructive/10" },
 };
 
 type StatusFilter = 'ALL' | 'IN_TRANSIT' | 'DELAYED' | 'DELIVERED';
@@ -40,11 +34,6 @@ export default function EnviosPage() {
   }, [router.query.status]);
 
   useEffect(() => {
-    if (!api.isAuthenticated()) {
-      router.push("/login");
-      return;
-    }
-
     loadShipments();
   }, [router, activeFilter]);
 
@@ -81,9 +70,9 @@ export default function EnviosPage() {
   // Calculate stats from ALL shipments (not filtered)
   const stats = {
     total: shipments.length,
-    inTransit: shipments.filter((s) => ['IN_TRANSIT', 'ASSIGNED', 'in_transit', 'pending'].includes(s.status)).length,
-    delayed: shipments.filter((s) => ['DELAYED', 'INCIDENT', 'delayed'].includes(s.status)).length,
-    delivered: shipments.filter((s) => ['DELIVERED', 'delivered'].includes(s.status)).length,
+    inTransit: shipments.filter((s) => ["PENDING", "IN_TRANSIT"].includes(s.status)).length,
+    delayed: shipments.filter((s) => ["DELAYED", "SILENCE"].includes(s.status)).length,
+    delivered: shipments.filter((s) => ["DELIVERED"].includes(s.status)).length,
   };
 
   const filterTabs: { key: StatusFilter; label: string; count: number }[] = [
@@ -260,13 +249,13 @@ function StatCard({
 }
 
 function ShipmentRow({ shipment, onDelete }: { shipment: Shipment; onDelete: () => void }) {
-  const status = statusConfig[shipment.status] || statusConfig.CREATED;
+  const status = statusConfig[shipment.status] || statusConfig.PENDING;
 
   return (
     <div className="flex items-center justify-between px-6 py-4 hover:bg-white/5 transition group">
       <Link href={`/envios/${shipment.id}`} className="flex-1 min-w-0">
         <div className="flex items-center gap-3">
-          <p className="font-medium text-white truncate">{shipment.customer_name}</p>
+          <p className="font-medium text-white truncate">{shipment.reference}</p>
           <span
             className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${status.bg} ${status.color}`}
           >
@@ -276,7 +265,7 @@ function ShipmentRow({ shipment, onDelete }: { shipment: Shipment; onDelete: () 
         <div className="mt-1 flex items-center gap-4 text-sm text-slate-400">
           <span className="flex items-center gap-1">
             <MapPin className="h-3.5 w-3.5" />
-            {shipment.origin_text} → {shipment.destination_text}
+            {shipment.origin} → {shipment.destination}
           </span>
         </div>
       </Link>
@@ -286,7 +275,7 @@ function ShipmentRow({ shipment, onDelete }: { shipment: Shipment; onDelete: () 
           ETA: {shipment.eta_at_utc ? format(new Date(shipment.eta_at_utc), "dd MMM, HH:mm", { locale: es }) : 'N/A'}
         </p>
           <p className="text-xs text-slate-500">
-            Creado: {format(new Date(shipment.created_at), "dd/MM/yyyy", { locale: es })}
+            Creado: {format(new Date(shipment.created_at_utc), "dd/MM/yyyy", { locale: es })}
           </p>
         </div>
         {/* Action buttons - visible on hover */}

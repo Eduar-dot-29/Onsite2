@@ -12,7 +12,6 @@ export default function NuevoContactoPage() {
 
   const [formData, setFormData] = useState<ContactCreate>({
     name: "",
-    channel: "telegram",
     telegram_chat_id: "",
     phone_e164: "",
   });
@@ -35,7 +34,6 @@ export default function NuevoContactoPage() {
     try {
       const data: ContactCreate = {
         name: formData.name,
-        channel: formData.channel,
         telegram_chat_id: formData.telegram_chat_id || null,
         phone_e164: formData.phone_e164 || null,
       };
@@ -94,27 +92,10 @@ export default function NuevoContactoPage() {
             </div>
 
             {/* Channel */}
+            {/* Phone - used for linking with Telegram */}
             <div>
               <label className="block text-sm font-medium text-slate-300 mb-1.5">
-                Canal de Comunicación *
-              </label>
-              <select
-                name="channel"
-                value={formData.channel}
-                onChange={handleChange}
-                className="w-full rounded-lg border border-border bg-input px-4 py-2.5 text-white focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-                required
-              >
-                <option value="telegram">Telegram</option>
-                <option value="sms">SMS</option>
-                <option value="whatsapp">WhatsApp</option>
-              </select>
-            </div>
-
-            {/* Phone - always shown for identification */}
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1.5">
-                Teléfono (formato E.164) *
+                Teléfono (formato E.164)
               </label>
               <input
                 type="tel"
@@ -123,35 +104,30 @@ export default function NuevoContactoPage() {
                 onChange={handleChange}
                 className="w-full rounded-lg border border-border bg-input px-4 py-2.5 text-white placeholder-slate-500 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                 placeholder="+34612345678"
-                required
               />
               <p className="mt-1.5 text-xs text-slate-500">
-                {formData.channel === "telegram" 
-                  ? "El conductor compartirá su teléfono en Telegram para vincularse automáticamente"
-                  : "Incluye el código de país, ej: +34612345678"}
+                El conductor compartirá su teléfono en Telegram para vincularse automáticamente.
               </p>
             </div>
 
             {/* Telegram Chat ID - optional, auto-filled when driver shares phone */}
-            {formData.channel === "telegram" && (
-              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1.5">
-                  Telegram Chat ID
-                  <span className="text-slate-500 ml-1">(opcional - se vincula automáticamente)</span>
-                </label>
-                <input
-                  type="text"
-                  name="telegram_chat_id"
-                  value={formData.telegram_chat_id || ""}
-                  onChange={handleChange}
-                  className="w-full rounded-lg border border-border bg-input px-4 py-2.5 text-white placeholder-slate-500 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-                  placeholder="123456789"
-                />
-                <p className="mt-1.5 text-xs text-slate-500">
-                  Si lo dejas vacío, se vinculará cuando el conductor envíe /start y comparta su teléfono
-                </p>
-              </div>
-            )}
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-1.5">
+                Telegram Chat ID
+                <span className="text-slate-500 ml-1">(opcional - se vincula automáticamente)</span>
+              </label>
+              <input
+                type="text"
+                name="telegram_chat_id"
+                value={formData.telegram_chat_id || ""}
+                onChange={handleChange}
+                className="w-full rounded-lg border border-border bg-input px-4 py-2.5 text-white placeholder-slate-500 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                placeholder="123456789"
+              />
+              <p className="mt-1.5 text-xs text-slate-500">
+                Si lo dejas vacío, se vinculará cuando el conductor envíe /start y comparta su teléfono.
+              </p>
+            </div>
 
             {/* Actions */}
             <div className="flex gap-4 pt-4">

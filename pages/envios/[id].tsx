@@ -6,46 +6,33 @@ import {
   MapPin,
   Clock,
   User,
-  Calendar,
   Navigation,
-  Package,
-  CheckCircle,
   AlertTriangle,
   Send,
   MessageSquare,
-  Truck,
   AlertCircle,
   RefreshCw,
 } from "lucide-react";
 import AppLayout from "@/components/AppLayout";
-import { api, Shipment, Contact, ShipmentEvent, TrackingCheckin } from "@/lib/api";
+import { api, Contact, ShipmentDetail, ShipmentEvent } from "@/lib/api";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
 const statusConfig: Record<string, { label: string; color: string; bg: string }> = {
-  // Uppercase (new format)
-  CREATED: { label: "Pendiente", color: "text-warning", bg: "bg-warning/10" },
-  ASSIGNED: { label: "Asignado", color: "text-blue-400", bg: "bg-blue-400/10" },
+  PENDING: { label: "Pendiente", color: "text-slate-300", bg: "bg-slate-400/10" },
   IN_TRANSIT: { label: "En Tránsito", color: "text-primary", bg: "bg-primary/10" },
-  INCIDENT: { label: "Incidencia", color: "text-orange-400", bg: "bg-orange-400/10" },
   DELAYED: { label: "Retrasado", color: "text-destructive", bg: "bg-destructive/10" },
+  SILENCE: { label: "Silencio", color: "text-warning", bg: "bg-warning/10" },
   DELIVERED: { label: "Entregado", color: "text-success", bg: "bg-success/10" },
-  // Lowercase fallbacks (old format)
-  pending: { label: "Pendiente", color: "text-warning", bg: "bg-warning/10" },
-  in_transit: { label: "En Tránsito", color: "text-primary", bg: "bg-primary/10" },
-  delivered: { label: "Entregado", color: "text-success", bg: "bg-success/10" },
-  delayed: { label: "Retrasado", color: "text-destructive", bg: "bg-destructive/10" },
-  cancelled: { label: "Cancelado", color: "text-slate-400", bg: "bg-slate-400/10" },
 };
 
 export default function EnvioDetailPage() {
   const router = useRouter();
   const { id } = router.query;
 
-  const [shipment, setShipment] = useState<Shipment | null>(null);
+  const [shipment, setShipment] = useState<ShipmentDetail | null>(null);
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [events, setEvents] = useState<ShipmentEvent[]>([]);
-  const [checkins, setCheckins] = useState<TrackingCheckin[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [assigning, setAssigning] = useState(false);
@@ -55,11 +42,6 @@ export default function EnvioDetailPage() {
   const [sendingCheckin, setSendingCheckin] = useState(false);
 
   useEffect(() => {
-    if (!api.isAuthenticated()) {
-      router.push("/login");
-      return;
-    }
-
     if (id && typeof id === "string") {
       loadData(id);
     }
@@ -67,16 +49,13 @@ export default function EnvioDetailPage() {
 
   const loadData = async (shipmentId: string) => {
     try {
-      const [shipmentData, contactsData, eventsData, checkinsData] = await Promise.all([
-        api.getShipment(shipmentId),
+      const [shipmentData, contactsData] = await Promise.all([
+        api.getShipmentDetail(shipmentId),
         api.getContacts(),
-        api.getShipmentEvents(shipmentId),
-        api.getShipmentCheckins(shipmentId),
       ]);
       setShipment(shipmentData);
       setContacts(contactsData);
-      setEvents(eventsData);
-      setCheckins(checkinsData);
+      setEvents(shipmentData.events || []);
 
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error");
@@ -90,8 +69,8 @@ export default function EnvioDetailPage() {
 
     setAssigning(true);
     try {
-      const updated = await api.assignContact(shipment.id, selectedContact);
-      setShipment(updated);
+      await api.assignDriver(shipment.id, selectedContact);
+      await loadData(shipment.id);
       setSelectedContact("");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error");
@@ -152,8 +131,8 @@ export default function EnvioDetailPage() {
     );
   }
 
-  const status = statusConfig[shipment.status] || statusConfig.pending;
-  const assignedContact = contacts.find((c) => c.id === shipment.assigned_contact_id);
+  const status = statusConfig[shipment.status] || statusConfig.PENDING;
+  const assignedContact = contacts.find((c) => c.id === shipment.driver_id);
 
   return (
     <AppLayout>
@@ -172,7 +151,7 @@ export default function EnvioDetailPage() {
             <div className="flex items-start justify-between">
               <div>
                 <h1 className="text-3xl font-semibold text-white">
-                  {shipment.customer_name}
+                  {shipment.reference}
                 </h1>
                 <p className="mt-1 text-sm text-slate-400">
                   ID: {shipment.id}
@@ -211,7 +190,7 @@ export default function EnvioDetailPage() {
                       </div>
                       <div>
                         <p className="text-xs text-slate-400 uppercase tracking-wide">Origen</p>
-                        <p className="text-white">{shipment.origin_text}</p>
+                        <p className="text-white">{shipment.origin}</p>
                       </div>
                     </div>
 
@@ -223,7 +202,7 @@ export default function EnvioDetailPage() {
                       </div>
                       <div>
                         <p className="text-xs text-slate-400 uppercase tracking-wide">Destino</p>
-                        <p className="text-white">{shipment.destination_text}</p>
+                        <p className="text-white">{shipment.destination}</p>
                       </div>
                     </div>
                   </div>
@@ -251,7 +230,16 @@ export default function EnvioDetailPage() {
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-slate-400">Duración</span>
-                      <span className="text-white">{shipment.estimated_duration_minutes ? Math.round(shipment.estimated_duration_minutes / 60) : (shipment as any).eta_hours || 0}h</span>
+                      <span className="text-white">
+                        {Math.max(
+                          0,
+                          Math.round(
+                            (new Date(shipment.eta_at_utc).getTime() - new Date(shipment.departure_at_utc).getTime()) /
+                              3600000
+                          )
+                        )}
+                        h
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -269,8 +257,8 @@ export default function EnvioDetailPage() {
                     <div>
                       <p className="text-white font-medium">{assignedContact.name}</p>
                       <p className="text-sm text-slate-400">
-                        {assignedContact.channel === 'telegram' ? '📱 Telegram' : assignedContact.channel === 'whatsapp' ? '💬 WhatsApp' : assignedContact.channel}
-                        {assignedContact.telegram_chat_id && ` · ID: ${assignedContact.telegram_chat_id}`}
+                        {assignedContact.telegram_chat_id ? "📱 Telegram vinculado" : "Telegram no vinculado"}
+                        {assignedContact.phone_e164 && ` · ${assignedContact.phone_e164}`}
                       </p>
                     </div>
                     <span className="text-xs text-success bg-success/10 px-2 py-1 rounded">Asignado</span>
@@ -288,9 +276,9 @@ export default function EnvioDetailPage() {
                           className="flex-1 rounded-lg border border-border bg-input px-4 py-2.5 text-white focus:border-primary focus:outline-none"
                         >
                           <option value="">Seleccionar...</option>
-                          {contacts.filter(c => c.channel === 'telegram').map((contact) => (
+                          {contacts.filter(c => !!c.telegram_chat_id).map((contact) => (
                             <option key={contact.id} value={contact.id}>
-                              {contact.name} (Telegram)
+                              {contact.name}
                             </option>
                           ))}
                         </select>
@@ -354,9 +342,10 @@ export default function EnvioDetailPage() {
                     <p>Asigna un conductor con Telegram</p>
                     <p className="text-xs mt-1">para enviar check-ins</p>
                   </div>
-                ) : assignedContact.channel !== 'telegram' ? (
+                ) : !assignedContact.telegram_chat_id ? (
                   <div className="text-center py-6 text-slate-400 text-sm">
-                    <p>El conductor no tiene Telegram configurado</p>
+                    <p>El conductor no tiene Telegram vinculado</p>
+                    <p className="text-xs mt-1">Debe enviar /start y compartir teléfono</p>
                   </div>
                 ) : (
                   <div className="space-y-4">
@@ -381,26 +370,6 @@ export default function EnvioDetailPage() {
                       El conductor recibirá un mensaje en Telegram con opciones para responder
                     </p>
 
-                    {/* Check-ins list */}
-                    {checkins.length > 0 && (
-                      <div className="pt-4 border-t border-border">
-                        <p className="text-xs text-slate-400 mb-2">Historial de check-ins:</p>
-                        <div className="space-y-2 max-h-48 overflow-y-auto">
-                          {checkins.map((checkin) => (
-                            <div key={checkin.id} className="flex items-center justify-between text-xs p-2 rounded bg-white/5">
-                              <span className="text-slate-400">
-                                {checkin.scheduled_for_utc 
-                                  ? format(new Date(checkin.scheduled_for_utc), "dd/MM HH:mm", { locale: es })
-                                  : (checkin as any).due_at 
-                                    ? format(new Date((checkin as any).due_at), "dd/MM HH:mm", { locale: es })
-                                    : 'N/A'}
-                              </span>
-                              <CheckinStatusBadge status={checkin.status} />
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
                   </div>
                 )}
               </div>
@@ -425,9 +394,8 @@ export default function EnvioDetailPage() {
 
 // Event item component
 function EventItem({ event }: { event: ShipmentEvent }) {
-  const config = eventConfig[event.event_type] || { icon: AlertCircle, color: 'text-slate-400', label: event.event_type };
+  const config = eventConfig[event.event_type] || { icon: AlertCircle, color: "text-slate-400", label: event.event_type };
   const Icon = config.icon;
-  const payload = event.payload_json || {};
 
   return (
     <div className="flex items-start gap-3">
@@ -436,52 +404,22 @@ function EventItem({ event }: { event: ShipmentEvent }) {
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-sm text-white">{config.label}</p>
-        {payload && Object.keys(payload).length > 0 && (
-          <p className="text-xs text-slate-500 truncate">
-            {formatPayload(payload)}
+        {event.description && (
+          <p className="text-xs text-slate-500">
+            {event.description}
           </p>
         )}
         <p className="text-xs text-slate-500 mt-0.5">
-          {format(new Date(event.created_at), "dd/MM HH:mm:ss", { locale: es })}
+          {format(new Date(event.created_at_utc), "dd/MM HH:mm:ss", { locale: es })}
         </p>
       </div>
     </div>
   );
 }
 
-function CheckinStatusBadge({ status }: { status: string }) {
-  const config: Record<string, { label: string; color: string }> = {
-    pending: { label: 'Pendiente', color: 'text-slate-400 bg-slate-400/10' },
-    sent: { label: 'Enviado', color: 'text-primary bg-primary/10' },
-    answered: { label: 'Respondido', color: 'text-success bg-success/10' },
-    missed: { label: 'Sin respuesta', color: 'text-warning bg-warning/10' },
-    escalated: { label: 'Escalado', color: 'text-destructive bg-destructive/10' },
-  };
-  const c = config[status] || config.pending;
-  return <span className={`px-2 py-0.5 rounded text-xs ${c.color}`}>{c.label}</span>;
-}
-
 const eventConfig: Record<string, { icon: React.ElementType; color: string; label: string }> = {
-  SHIPMENT_CREATED: { icon: Package, color: 'text-primary', label: 'Envío creado' },
-  DRIVER_ASSIGNED: { icon: User, color: 'text-success', label: 'Conductor asignado' },
-  CHECKIN_SCHEDULED: { icon: Calendar, color: 'text-slate-400', label: 'Check-ins programados' },
-  CHECKIN_SENT: { icon: Send, color: 'text-primary', label: 'Check-in enviado' },
-  CHECKIN_OK: { icon: CheckCircle, color: 'text-success', label: 'Check-in OK' },
-  INCIDENT_BREAKDOWN: { icon: AlertTriangle, color: 'text-warning', label: 'Incidencia: Avería' },
-  INCIDENT_TRAFFIC: { icon: Truck, color: 'text-warning', label: 'Incidencia: Tráfico' },
-  DELAY_REPORTED: { icon: Clock, color: 'text-warning', label: 'Retraso reportado' },
-  LOCATION_RECEIVED: { icon: MapPin, color: 'text-primary', label: 'Ubicación recibida' },
-  ROUTE_RECALCULATED: { icon: Navigation, color: 'text-primary', label: 'Ruta recalculada' },
-  ETA_UPDATED: { icon: RefreshCw, color: 'text-success', label: 'ETA actualizada' },
-  NO_RESPONSE: { icon: AlertCircle, color: 'text-warning', label: 'Sin respuesta' },
-  ESCALATED: { icon: AlertTriangle, color: 'text-destructive', label: 'Escalado a operador' },
+  CHECK_IN: { icon: Send, color: "text-primary", label: "Check-in" },
+  INCIDENT: { icon: AlertTriangle, color: "text-destructive", label: "Incidencia" },
+  LOCATION: { icon: MapPin, color: "text-primary", label: "Ubicación" },
+  SYSTEM: { icon: RefreshCw, color: "text-slate-400", label: "Sistema" },
 };
-
-function formatPayload(payload: Record<string, unknown>): string {
-  if (payload.delay_minutes) return `+${payload.delay_minutes} minutos`;
-  if (payload.count) return `${payload.count} check-ins`;
-  if (payload.contact_name) return payload.contact_name as string;
-  if (payload.lat && payload.lon) return `${(payload.lat as number).toFixed(3)}, ${(payload.lon as number).toFixed(3)}`;
-  if (payload.reason) return payload.reason === 'no_response' ? 'Sin respuesta del conductor' : payload.reason as string;
-  return '';
-}

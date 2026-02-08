@@ -8,18 +8,11 @@ import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
 const statusConfig: Record<string, { label: string; color: string }> = {
-  CREATED: { label: "Creado", color: "text-slate-400" },
-  ASSIGNED: { label: "Asignado", color: "text-warning" },
+  PENDING: { label: "Pendiente", color: "text-slate-400" },
   IN_TRANSIT: { label: "En Tránsito", color: "text-primary" },
-  INCIDENT: { label: "Incidencia", color: "text-orange-400" },
   DELAYED: { label: "Retrasado", color: "text-destructive" },
+  SILENCE: { label: "Silencio", color: "text-warning" },
   DELIVERED: { label: "Entregado", color: "text-success" },
-  // Fallback for old lowercase values
-  pending: { label: "Pendiente", color: "text-warning" },
-  in_transit: { label: "En Tránsito", color: "text-primary" },
-  delivered: { label: "Entregado", color: "text-success" },
-  delayed: { label: "Retrasado", color: "text-destructive" },
-  cancelled: { label: "Cancelado", color: "text-slate-400" },
 };
 
 export default function DashboardPage() {
@@ -28,11 +21,6 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!api.isAuthenticated()) {
-      router.push("/login");
-      return;
-    }
-
     loadData();
   }, [router]);
 
@@ -49,9 +37,9 @@ export default function DashboardPage() {
 
   const stats = {
     total: shipments.length,
-    inTransit: shipments.filter((s) => ['IN_TRANSIT', 'ASSIGNED', 'in_transit', 'pending'].includes(s.status)).length,
-    delayed: shipments.filter((s) => ['DELAYED', 'INCIDENT', 'delayed'].includes(s.status)).length,
-    delivered: shipments.filter((s) => ['DELIVERED', 'delivered'].includes(s.status)).length,
+    inTransit: shipments.filter((s) => ["PENDING", "IN_TRANSIT"].includes(s.status)).length,
+    delayed: shipments.filter((s) => ["DELAYED", "SILENCE"].includes(s.status)).length,
+    delivered: shipments.filter((s) => ["DELIVERED"].includes(s.status)).length,
   };
 
   const recentShipments = shipments.slice(0, 5);
@@ -133,7 +121,7 @@ export default function DashboardPage() {
             ) : (
               <div className="divide-y divide-border">
                 {recentShipments.map((shipment) => {
-                  const status = statusConfig[shipment.status] || statusConfig.CREATED;
+                  const status = statusConfig[shipment.status] || statusConfig.PENDING;
                   return (
                     <Link
                       key={shipment.id}
@@ -141,15 +129,15 @@ export default function DashboardPage() {
                       className="flex items-center justify-between px-6 py-4 hover:bg-white/5 transition"
                     >
                       <div>
-                        <p className="font-medium text-white">{shipment.customer_name}</p>
+                        <p className="font-medium text-white">{shipment.reference}</p>
                         <p className="text-sm text-slate-400">
-                          {shipment.origin_text} → {shipment.destination_text}
+                          {shipment.origin} → {shipment.destination}
                         </p>
                       </div>
                       <div className="text-right">
                         <p className={`text-sm ${status.color}`}>{status.label}</p>
                         <p className="text-xs text-slate-500">
-                          {format(new Date(shipment.created_at), "dd/MM/yyyy", { locale: es })}
+                          {format(new Date(shipment.created_at_utc), "dd/MM/yyyy", { locale: es })}
                         </p>
                       </div>
                     </Link>

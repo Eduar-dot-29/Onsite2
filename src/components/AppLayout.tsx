@@ -5,6 +5,7 @@ import {
   LayoutGrid,
   Truck,
   Users,
+  AlertTriangle,
   LogOut,
   Menu,
   X,
@@ -14,6 +15,7 @@ import { api } from "@/lib/api";
 const navItems = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutGrid },
   { label: "Envíos", href: "/envios", icon: Truck },
+  { label: "Incidencias", href: "/incidencias", icon: AlertTriangle },
   { label: "Contactos", href: "/contactos", icon: Users },
 ];
 

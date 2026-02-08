@@ -1,16 +1,11 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import Link from "next/link";
-import { Plus, User, MessageSquare, Phone } from "lucide-react";
+import { Plus, User, Link2, MessageSquare } from "lucide-react";
 import AppLayout from "@/components/AppLayout";
 import { api, Contact } from "@/lib/api";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-
-const channelConfig: Record<string, { label: string; icon: React.ElementType; color: string }> = {
-  TELEGRAM: { label: "Telegram", icon: MessageSquare, color: "text-blue-400" },
-  WHATSAPP: { label: "WhatsApp", icon: MessageSquare, color: "text-emerald-400" },
-};
 
 export default function ContactosPage() {
   const router = useRouter();
@@ -19,11 +14,6 @@ export default function ContactosPage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (!api.isAuthenticated()) {
-      router.push("/login");
-      return;
-    }
-
     loadContacts();
   }, [router]);
 
@@ -96,9 +86,6 @@ export default function ContactosPage() {
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {contacts.map((contact) => {
-              const channel = channelConfig[contact.channel] || channelConfig.TELEGRAM;
-              const Icon = channel.icon;
-
               return (
                 <div
                   key={contact.id}
@@ -111,9 +98,9 @@ export default function ContactosPage() {
                       </div>
                       <div>
                         <p className="font-medium text-white">{contact.name}</p>
-                        <div className={`flex items-center gap-1 text-xs ${channel.color}`}>
-                          <Icon className="h-3 w-3" />
-                          {channel.label}
+                        <div className="flex items-center gap-1 text-xs text-slate-400">
+                          <Link2 className="h-3 w-3" />
+                          {contact.link_status === "LINKED" ? "Vinculado" : "No vinculado"}
                         </div>
                       </div>
                     </div>
@@ -130,10 +117,16 @@ export default function ContactosPage() {
                         <span className="text-slate-500">Teléfono:</span> {contact.phone_e164}
                       </p>
                     )}
+                    {!contact.telegram_chat_id && (
+                      <p className="text-xs text-slate-500 flex items-center gap-1">
+                        <MessageSquare className="h-3 w-3" />
+                        En Telegram: enviar <span className="text-slate-300">/start</span> y compartir teléfono
+                      </p>
+                    )}
                   </div>
 
                   <p className="mt-3 text-xs text-slate-500">
-                    Creado: {format(new Date(contact.created_at), "dd/MM/yyyy", { locale: es })}
+                    Creado: {format(new Date(contact.created_at_utc), "dd/MM/yyyy", { locale: es })}
                   </p>
                 </div>
               );

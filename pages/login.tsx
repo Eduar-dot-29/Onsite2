@@ -12,7 +12,6 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      await api.devLogin("admin@pruebas.com");
       router.push("/dashboard");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error al iniciar sesión");
@@ -51,7 +50,7 @@ export default function LoginPage() {
           </button>
 
           <p className="mt-6 text-center text-xs text-slate-500">
-            Entorno de pruebas
+            Acceso directo (sin autenticación)
           </p>
         </div>
       </div>
