@@ -1,6 +1,6 @@
 import React from 'react';
 import { 
-  AlertOctagon, Phone, MapPin, Tool, 
+  AlertOctagon, Phone, MapPin, Wrench, 
   User, Truck, Navigation, MessageSquare, X 
 } from 'lucide-react';
 
@@ -90,7 +90,7 @@ const AlertaEmergencia = () => {
         </div>
 
         <button className="w-full bg-slate-900 border border-slate-700 text-slate-400 hover:text-white p-4 rounded-2xl text-sm font-bold transition-all flex items-center justify-center gap-2">
-          <Tool size={18} />
+          <Wrench size={18} />
           <span>Marcar como Resolución en Curso</span>
         </button>
       </div>
