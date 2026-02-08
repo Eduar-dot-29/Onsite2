@@ -276,9 +276,10 @@ export default function EnvioDetailPage() {
                           className="flex-1 rounded-lg border border-border bg-input px-4 py-2.5 text-white focus:border-primary focus:outline-none"
                         >
                           <option value="">Seleccionar...</option>
-                          {contacts.filter(c => !!c.telegram_chat_id).map((contact) => (
+                          {contacts.map((contact) => (
                             <option key={contact.id} value={contact.id}>
                               {contact.name}
+                              {contact.telegram_chat_id ? "" : " (no vinculado)"}
                             </option>
                           ))}
                         </select>
@@ -295,6 +296,14 @@ export default function EnvioDetailPage() {
                         Crear contacto →
                       </Link>
                     )}
+                    {selectedContact &&
+                      !contacts.find((c) => c.id === selectedContact)?.telegram_chat_id && (
+                        <p className="text-xs text-slate-500">
+                          Este conductor aún no está vinculado a Telegram. Podrás asignarlo igualmente, pero no
+                          recibirá check-ins hasta que envíe <span className="text-slate-300">/start</span> y comparta
+                          su teléfono.
+                        </p>
+                      )}
                   </div>
                 )}
               </div>
