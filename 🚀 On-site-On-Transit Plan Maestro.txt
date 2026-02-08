@@ -1,0 +1,52 @@
+🚀 On-site-On-Transit: Plan Maestro de Implementación Backend
+1. Objetivo
+Implementar la lógica de automatización para seguimiento de envíos basada en FastAPI, SQLAlchemy 2.0, Celery y Telegram. El sistema debe gestionar check-ins automáticos (por tiempo o por hitos geográficos) y procesar incidencias (averías/tráfico) reportadas por conductores.
+
+2. Modelos de Base de Datos (SQLAlchemy 2.0)
+Implementar en app/models/:
+
+Shipment:
+UUID, Referencia, Origen/Destino.
+Status: PENDING, IN_TRANSIT, DELAYED, SILENCE, DELIVERED.
+Tiempos: departure_at_utc, eta_at_utc, timezone (IANA).
+Config: checkin_type (INTERVAL/MILESTONE), interval_minutes.
+Milestone:
+shipment_id, Nombre, Latitud, Longitud, Radio (km), is_completed.
+ShipmentEvent:
+Log de eventos para el Timeline: event_type (CHECK_IN, INCIDENT, SYSTEM, LOCATION), description, created_at_utc.
+Contact:
+Nombre, Teléfono (E164), telegram_chat_id, status (LINKED/PENDING).
+3. Lógica de Automatización (Celery + Redis)
+Implementar tareas en app/workers/:
+
+process_due_checkins:
+Ejecutar cada minuto (Celery Beat).
+Buscar envíos IN_TRANSIT cuyo último evento de check-in sea > interval_minutes.
+Enviar mensaje proactivo al telegram_chat_id del conductor con botones "One-Shot" (OK, Tráfico, Avería).
+mark_silence_and_escalate:
+Si un check-in no recibe respuesta en X minutos (configuración global), marcar envío como SILENCE y notificar al admin.
+recalculate_route_and_eta:
+Tarea asíncrona que usa la ubicación actual y una velocidad media (stub) para actualizar el eta_at_utc tras una incidencia.
+4. Integración con Telegram (python-telegram-bot)
+Implementar en app/telegram/:
+
+Webhook: Procesar respuestas de los botones.
+Acción "Avería":
+Cambiar estado a DELAYED.
+Solicitar ubicación al conductor.
+Al recibir ubicación, disparar recalculate_route_and_eta.
+Crear un ShipmentEvent tipo INCIDENT.
+Acción "OK":
+Crear ShipmentEvent tipo CHECK_IN.
+Actualizar última ubicación conocida.
+5. Endpoints API (FastAPI)
+Implementar en app/api/:
+
+POST /shipments: Crear envío y programar primer check-in.
+GET /tracking/shipments/{id}/events: Retornar lista de eventos ordenada para el Timeline del Frontend.
+POST /contacts: Crear contacto y generar enlace de vinculación para Telegram.
+GET /auth/tenant-info: Información de configuración del bot.
+6. Reglas de Negocio Cruciales
+Timezones: Almacenar todo en UTC. Las conversiones a local se hacen usando el campo timezone del Shipment.
+One-Shot Buttons: Al recibir una respuesta en Telegram, editar el mensaje original para eliminar el teclado (evitar respuestas duplicadas).
+Soft Delete: Los envíos eliminados deben cancelar todas sus tareas de Celery pendientes.
