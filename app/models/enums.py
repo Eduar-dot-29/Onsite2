@@ -19,6 +19,7 @@ class CheckinType(str, Enum):
 class ShipmentEventType(str, Enum):
     CHECK_IN = "CHECK_IN"
     INCIDENT = "INCIDENT"
+    LOCATION = "LOCATION"
     SYSTEM = "SYSTEM"
 
 
