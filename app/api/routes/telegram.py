@@ -1,13 +1,11 @@
 from __future__ import annotations
 
-import asyncio
 import logging
-from uuid import UUID
-
 from fastapi import APIRouter, Depends, Request
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from app.api.utils.phone import normalize_phone_e164
 from app.core.db import get_session
 from app.core.enums import MessageAction, MessageType
 from app.models.contact import Contact
@@ -47,21 +45,49 @@ async def telegram_webhook(request: Request, session: Session = Depends(get_sess
 
     # 1) /start -> request phone for linking
     if message.type == MessageType.COMMAND and message.action == MessageAction.START:
-        await provider.send_request_phone(chat_id, driver_name)
+        existing = session.execute(
+            select(Contact).where(Contact.telegram_chat_id == chat_id)
+        ).scalars().first()
+        if existing and existing.link_status == ContactLinkStatus.LINKED:
+            await provider.send_text(
+                existing,
+                f"¡Hola {driver_name}! Ya estás vinculado ✅. Cuando te asignen un envío, recibirás los check-ins automáticamente.",
+            )
+        else:
+            await provider.send_request_phone(chat_id, driver_name)
         return {"ok": True}
 
     # 2) Shared phone -> link contact
     if message.type == MessageType.CONTACT and message.shared_phone:
+        normalized = normalize_phone_e164(message.shared_phone)
+        if not normalized:
+            await provider.send_phone_not_found_message(chat_id)
+            return {"ok": True}
+
+        # Best-effort match ignoring spaces/dashes (Postgres regexp_replace)
+        phone_norm_expr = func.regexp_replace(Contact.phone_e164, r"[^0-9+]", "", "g")
         contact = session.execute(
-            select(Contact).where(Contact.phone_e164 == message.shared_phone)
+            select(Contact).where(
+                (Contact.phone_e164 == normalized) | (phone_norm_expr == normalized)
+            )
         ).scalars().first()
 
         if not contact:
             await provider.send_phone_not_found_message(chat_id)
             return {"ok": True}
 
+        # If linked to a different Telegram chat, don't overwrite silently
+        if contact.telegram_chat_id and contact.telegram_chat_id != chat_id:
+            await provider.send_text(
+                type("C", (), {"telegram_chat_id": chat_id})(),
+                "⚠️ Este teléfono ya está vinculado a otra cuenta de Telegram.",
+            )
+            return {"ok": True}
+
         contact.telegram_chat_id = chat_id
         contact.link_status = ContactLinkStatus.LINKED
+        # Persist normalized phone
+        contact.phone_e164 = normalize_phone_e164(contact.phone_e164) or normalized
         session.add(contact)
         session.commit()
         await provider.send_phone_linked_message(chat_id, contact.name)

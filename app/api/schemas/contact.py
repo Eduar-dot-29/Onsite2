@@ -6,6 +6,7 @@ from uuid import UUID
 from pydantic import BaseModel, field_validator
 
 from app.models.enums import ContactLinkStatus
+from app.api.utils.phone import normalize_phone_e164
 
 
 class ContactBase(BaseModel):
@@ -18,6 +19,9 @@ class ContactBase(BaseModel):
     def validate_phone_e164(cls, v: str | None) -> str | None:
         if v is None:
             return v
+        v = normalize_phone_e164(v)
+        if v is None:
+            return None
         # Lightweight E.164 check (full validation can be added later)
         if not v.startswith("+") or len(v) < 8 or len(v) > 32:
             raise ValueError("phone_e164 must be in E.164 format, e.g. +34612345678")
@@ -38,6 +42,9 @@ class ContactUpdate(BaseModel):
     def validate_phone_e164(cls, v: str | None) -> str | None:
         if v is None:
             return v
+        v = normalize_phone_e164(v)
+        if v is None:
+            return None
         if not v.startswith("+") or len(v) < 8 or len(v) > 32:
             raise ValueError("phone_e164 must be in E.164 format, e.g. +34612345678")
         return v

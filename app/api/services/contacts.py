@@ -4,6 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.api.schemas.contact import ContactCreate
+from app.api.utils.phone import normalize_phone_e164
 from app.models.contact import Contact
 from app.models.enums import ContactLinkStatus
 
@@ -14,7 +15,7 @@ def create_contact(session: Session, data: ContactCreate) -> Contact:
     )
     contact = Contact(
         name=data.name,
-        phone_e164=data.phone_e164,
+        phone_e164=normalize_phone_e164(data.phone_e164),
         telegram_chat_id=data.telegram_chat_id,
         link_status=link_status,
     )
