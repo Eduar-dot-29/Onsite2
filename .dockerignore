@@ -1,3 +1,6 @@
+# This .dockerignore is for the backend (root Dockerfile)
+# Frontend has its own .dockerignore in /frontend/
+
 # Python
 __pycache__/
 *.py[cod]
@@ -30,7 +33,8 @@ docker-compose*.yml
 *.txt
 !requirements.txt
 
-# Frontend
+# Frontend (exclude from backend build)
+frontend/
 node_modules/
 .next/
 pages/
