@@ -18,6 +18,7 @@ celery_app = Celery(
     "tracking",
     broker=settings.redis_url,
     backend=settings.redis_url,
+    include=["app.workers.tasks"],
 )
 
 celery_app.conf.update(
