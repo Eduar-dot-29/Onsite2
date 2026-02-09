@@ -1,0 +1,60 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+.venv
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Git
+.git/
+.gitignore
+
+# Docker
+Dockerfile
+docker-compose*.yml
+.dockerignore
+
+# Documentation
+*.md
+*.txt
+!requirements.txt
+
+# Frontend
+node_modules/
+.next/
+pages/
+src/
+*.tsx
+*.ts
+!*.py
+package*.json
+tsconfig.json
+next*.js
+postcss.config.js
+tailwind.config.ts
+
+# Tests (optional, comment out if you want to run tests in container)
+tests/
+
+# Environment
+.env
+.env.*
+
+# Database
+*.db
+*.sqlite
+
+# Misc
+.DS_Store
+*.log
