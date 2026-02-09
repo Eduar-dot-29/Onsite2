@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Directorio de Conductores - On-site-On-Transit</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#137fec",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#101922",
+                    },
+                    fontFamily: {
+                        "display": ["Inter"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 antialiased font-display">
+<div class="relative flex min-h-screen w-full flex-col bg-background-light dark:bg-background-dark overflow-x-hidden max-w-[430px] mx-auto shadow-2xl border-x border-slate-200 dark:border-slate-800">
+<!-- Header Section -->
+<header class="sticky top-0 z-30 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md pt-6 pb-2 px-4 border-b border-slate-200 dark:border-slate-800">
+<div class="flex items-center justify-between mb-4">
+<button class="p-2 -ml-2 text-primary hover:bg-primary/10 rounded-full transition-colors">
+<span class="material-symbols-outlined text-[28px]">chevron_left</span>
+</button>
+<h1 class="text-lg font-bold tracking-tight">Directorio de Conductores</h1>
+<button class="p-2 -mr-2 text-primary hover:bg-primary/10 rounded-full transition-colors">
+<span class="material-symbols-outlined text-[24px]">more_horiz</span>
+</button>
+</div>
+<!-- Search Bar -->
+<div class="relative mb-4">
+<label class="flex items-center bg-slate-200/50 dark:bg-primary/10 rounded-xl px-4 py-3 group focus-within:ring-2 focus-within:ring-primary/50 transition-all">
+<span class="material-symbols-outlined text-slate-500 dark:text-slate-400 mr-2">search</span>
+<input class="bg-transparent border-none p-0 focus:ring-0 text-sm w-full placeholder:text-slate-500 dark:placeholder:text-slate-400" placeholder="Buscar por nombre o ID..." type="text"/>
+</label>
+</div>
+<!-- Horizontal Filter Chips -->
+<div class="flex gap-2 overflow-x-auto no-scrollbar pb-2 -mx-1 px-1">
+<button class="flex items-center gap-1.5 shrink-0 px-4 py-2 rounded-full bg-primary text-white text-xs font-semibold shadow-sm shadow-primary/30">
+                    Todos
+                </button>
+<button class="flex items-center gap-1.5 shrink-0 px-4 py-2 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-semibold hover:bg-primary/10 hover:text-primary transition-colors">
+<span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                    Vinculado
+                </button>
+<button class="flex items-center gap-1.5 shrink-0 px-4 py-2 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-semibold hover:bg-primary/10 hover:text-primary transition-colors">
+<span class="w-2 h-2 rounded-full bg-amber-500"></span>
+                    Pendiente
+                </button>
+<button class="flex items-center gap-1.5 shrink-0 px-4 py-2 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-semibold hover:bg-primary/10 hover:text-primary transition-colors">
+<span class="w-2 h-2 rounded-full bg-slate-400"></span>
+                    Desconectado
+                </button>
+</div>
+</header>
+<!-- Driver List -->
+<main class="flex-1 p-4 space-y-3">
+<!-- Linked Driver (Expanded Example) -->
+<div class="bg-white dark:bg-slate-900/50 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
+<details class="group" open="">
+<summary class="flex items-center p-4 cursor-pointer list-none">
+<div class="relative mr-3 shrink-0">
+<div class="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 bg-cover bg-center" data-alt="Portrait of a professional delivery driver" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCHZrfBrsWwPHk-8hjYYp0TPZL4Zt-g3ANr3eNov_HURatAkL0Q_Igu035q7rnEzg9iQmSu8IBHnhA3VQLd4GpyFkOi9ogErixXpv7c_OY0yZ098ukf_hnKBBUdd0KBon4ywvHdPTKjjTKzdEleizeU4Uo-EAfNgN_R5ZS8F0vDArAY9ZcWLRsPWEGRSdb8evPHhicvRPndy2rDSrWwTS8kvMKVo5h5cQtIa8z5_Vvf6qmQLv5WXz-pyaKS-hjbGL6hlAEWBrs_xFo')"></div>
+<div class="absolute bottom-0 right-0 w-3.5 h-3.5 bg-emerald-500 border-2 border-white dark:border-slate-900 rounded-full"></div>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center gap-2">
+<h3 class="text-sm font-semibold truncate uppercase tracking-wide">Carlos Rodriguez</h3>
+<span class="material-symbols-outlined text-[18px] text-[#0088cc]">send</span>
+</div>
+<p class="text-[11px] text-slate-500 dark:text-slate-400 font-medium">ESTADO: <span class="text-emerald-500">VINCULADO</span></p>
+</div>
+<span class="material-symbols-outlined text-slate-400 group-open:rotate-180 transition-transform">expand_more</span>
+</summary>
+<div class="px-4 pb-4 pt-0 border-t border-slate-100 dark:border-slate-800/50 bg-slate-50/50 dark:bg-slate-900/30">
+<div class="grid grid-cols-2 gap-4 pt-4">
+<div>
+<p class="text-[10px] text-slate-500 dark:text-slate-500 font-bold uppercase mb-1">Telegram Chat ID</p>
+<p class="text-xs font-mono bg-slate-200 dark:bg-slate-800 px-2 py-1 rounded inline-block">82930122</p>
+</div>
+<div>
+<p class="text-[10px] text-slate-500 dark:text-slate-500 font-bold uppercase mb-1">Última Actividad</p>
+<p class="text-xs">Hace 5 min</p>
+</div>
+</div>
+<div class="mt-4 flex gap-2">
+<button class="flex-1 bg-primary text-white text-xs font-bold py-2.5 rounded-lg flex items-center justify-center gap-2 shadow-lg shadow-primary/20">
+<span class="material-symbols-outlined text-[16px]">chat_bubble</span>
+                                Mensaje
+                            </button>
+<button class="p-2.5 bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-lg">
+<span class="material-symbols-outlined text-[18px]">history</span>
+</button>
+</div>
+</div>
+</details>
+</div>
+<!-- Pending Driver -->
+<div class="bg-white dark:bg-slate-900/50 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
+<details class="group">
+<summary class="flex items-center p-4 cursor-pointer list-none">
+<div class="relative mr-3 shrink-0">
+<div class="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 bg-cover bg-center" data-alt="Portrait of Elena Gomez a young driver" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuA9lBgpmvpsyYwdnnGwKcaHkzIHZVB5F7gZJbaiN4KhbP-Faciu_3BdlkVhBctsOmMP0gdNKeJlGMlFd2uAZaE3089_pLZqLdioHnscrLXhOGENDLSU4EyCJN4OJX8X4T3lPcjULdsIGURBQSIH8yexfJI1J6eC-XWOMKHSs55IKea1My4Dxa5GOG0TxK-LTau4HxwUrdhQu0x5FD_WDjMFvoTsBMGa0lAUdpWue5BwegSggxwQd448j9GbEo7_4a6Y-tfIiQerdIE')"></div>
+<div class="absolute bottom-0 right-0 w-3.5 h-3.5 bg-amber-500 border-2 border-white dark:border-slate-900 rounded-full"></div>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center gap-2">
+<h3 class="text-sm font-semibold truncate uppercase tracking-wide text-slate-700 dark:text-slate-200">Elena Gomez</h3>
+<span class="material-symbols-outlined text-[18px] text-slate-400">send</span>
+</div>
+<p class="text-[11px] text-slate-500 dark:text-slate-400 font-medium">ESTADO: <span class="text-amber-500">PENDIENTE</span></p>
+</div>
+<span class="material-symbols-outlined text-slate-400 group-open:rotate-180 transition-transform">expand_more</span>
+</summary>
+<div class="px-4 pb-4 pt-4 border-t border-slate-100 dark:border-slate-800/50">
+<p class="text-xs text-slate-500 italic mb-3">Esperando sincronización de cuenta...</p>
+<button class="w-full bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-bold py-2.5 rounded-lg flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-[18px]">sync</span>
+                            Re-enviar Invitación
+                        </button>
+</div>
+</details>
+</div>
+<!-- Disconnected Driver -->
+<div class="bg-white dark:bg-slate-900/50 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm opacity-80">
+<details class="group">
+<summary class="flex items-center p-4 cursor-pointer list-none">
+<div class="relative mr-3 shrink-0">
+<div class="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 bg-cover bg-center grayscale" data-alt="Portrait of Marcos Diaz driver offline" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCQLwV2fcR2kuD0wIySbXjVFYwNUcyyLMMP20yckPFfkLSdOjIttvDetAoTZkWZWtH1xraOSnzBy1W8zKuxHLkNSUZbzx8xK-vm8KDmjNZFYiUrypn-3syT9aYfR41etaYn6-aGxYOycaJOChBIxm9XOAsHEEkYaXVQZtaKiOnl-iW3wJlL30UpGWvPtg7cAB7D01GypfJrn4QVNsEzsgbenouqn8deljQdBl-RY1wwM-bhrpyFAfQwenGLWCoU122u2GvLejJEnqI')"></div>
+<div class="absolute bottom-0 right-0 w-3.5 h-3.5 bg-slate-400 border-2 border-white dark:border-slate-900 rounded-full"></div>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center gap-2">
+<h3 class="text-sm font-semibold truncate uppercase tracking-wide text-slate-500 dark:text-slate-400">Marcos Diaz</h3>
+<span class="material-symbols-outlined text-[18px] text-slate-500">send_and_archive</span>
+</div>
+<p class="text-[11px] text-slate-500 dark:text-slate-400 font-medium">ESTADO: <span class="text-slate-500">DESCONECTADO</span></p>
+</div>
+<span class="material-symbols-outlined text-slate-400 group-open:rotate-180 transition-transform">expand_more</span>
+</summary>
+<div class="px-4 pb-4 pt-4 border-t border-slate-100 dark:border-slate-800/50">
+<div class="flex items-center justify-between mb-3">
+<p class="text-[10px] text-slate-500 font-bold uppercase">Chat ID: <span class="font-mono">71102934</span></p>
+<p class="text-[10px] text-slate-500 font-bold uppercase">Inactivo: 2 días</p>
+</div>
+<button class="w-full border border-primary/50 text-primary text-xs font-bold py-2.5 rounded-lg flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-[18px]">link</span>
+                            Re-vincular
+                        </button>
+</div>
+</details>
+</div>
+<!-- Another Linked Driver -->
+<div class="bg-white dark:bg-slate-900/50 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
+<details class="group">
+<summary class="flex items-center p-4 cursor-pointer list-none">
+<div class="relative mr-3 shrink-0">
+<div class="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 bg-cover bg-center" data-alt="Female driver portrait smiling" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBO3NCKVMK4MzldMBXwz7uT8ElOCobQVRUCQTiMQ41s8HTm3q7H86_dlRQycNJFJ2hlsRnZ0H6KlS4CbZoEejWaU42uJDkH5ok3uBc2Zy7LXF3SE-TunHFh1os5R19N7Wvtr9UfxIv6wjBFrxo7IkIlL2LN68FkoVR_H5p6K-yxVGpiPZSsgMyFx77qDN3juG4dzN_ZgSJQMzvV_TsaIee88y2Z9LzoXYvPRoQCzmSFhD9YXLGkNleOpMcZoHCujyZRPrakXVNNh-w')"></div>
+<div class="absolute bottom-0 right-0 w-3.5 h-3.5 bg-emerald-500 border-2 border-white dark:border-slate-900 rounded-full"></div>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center gap-2">
+<h3 class="text-sm font-semibold truncate uppercase tracking-wide">Sofía Paredes</h3>
+<span class="material-symbols-outlined text-[18px] text-[#0088cc]">send</span>
+</div>
+<p class="text-[11px] text-slate-500 dark:text-slate-400 font-medium">ESTADO: <span class="text-emerald-500">VINCULADO</span></p>
+</div>
+<span class="material-symbols-outlined text-slate-400 group-open:rotate-180 transition-transform">expand_more</span>
+</summary>
+</details>
+</div>
+</main>
+<!-- Fixed Action Button (Add Driver) -->
+<button class="fixed bottom-24 right-6 w-14 h-14 bg-primary text-white rounded-full shadow-2xl flex items-center justify-center z-40 active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-[28px]">person_add</span>
+</button>
+<!-- Bottom Navigation Bar (iOS Style) -->
+<nav class="sticky bottom-0 z-30 bg-background-light/95 dark:bg-background-dark/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 px-6 pb-8 pt-3 flex justify-between items-center">
+<div class="flex flex-col items-center text-slate-400">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="text-[10px] mt-1">Dashboard</span>
+</div>
+<div class="flex flex-col items-center text-primary">
+<span class="material-symbols-outlined">badge</span>
+<span class="text-[10px] mt-1">Conductores</span>
+</div>
+<div class="flex flex-col items-center text-slate-400">
+<span class="material-symbols-outlined">monitoring</span>
+<span class="text-[10px] mt-1">Envíos</span>
+</div>
+<div class="flex flex-col items-center text-slate-400">
+<span class="material-symbols-outlined">settings</span>
+<span class="text-[10px] mt-1">Ajustes</span>
+</div>
+</nav>
+<!-- iOS Home Indicator -->
+<div class="fixed bottom-1 left-1/2 -translate-x-1/2 w-32 h-1.5 bg-slate-300 dark:bg-slate-700 rounded-full z-50"></div>
+</div>
+</body></html>

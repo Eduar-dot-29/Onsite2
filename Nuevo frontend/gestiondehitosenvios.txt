@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Gestión de Hitos - On-site-On-Transit</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#137fec",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#101922",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+        .timeline-line {
+            width: 2px;
+            background: linear-gradient(to bottom, #137fec 0%, #137fec 33%, #324d67 33%, #324d67 100%);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-white min-h-screen font-display">
+<!-- Top App Bar (iOS Style) -->
+<header class="sticky top-0 z-50 bg-background-dark/80 backdrop-blur-md border-b border-primary/10">
+<div class="flex items-center justify-between px-4 py-3">
+<button class="flex items-center justify-center size-10 rounded-full hover:bg-primary/10 transition-colors">
+<span class="material-symbols-outlined text-white">arrow_back_ios</span>
+</button>
+<div class="flex flex-col items-center">
+<h1 class="text-white text-sm font-bold tracking-tight uppercase opacity-60">Seguimiento</h1>
+<h2 class="text-white text-lg font-bold">Envío #8492-B</h2>
+</div>
+<button class="flex items-center justify-center size-10 rounded-full hover:bg-primary/10 transition-colors">
+<span class="material-symbols-outlined text-white">map</span>
+</button>
+</div>
+</header>
+<main class="p-4 space-y-6 max-w-md mx-auto">
+<!-- Summary Dashboard Card -->
+<section class="flex flex-wrap gap-3">
+<div class="flex-1 min-w-[140px] bg-primary/10 border border-primary/20 rounded-xl p-4 flex flex-col gap-1">
+<span class="text-xs font-semibold text-primary uppercase tracking-wider">Estado Actual</span>
+<div class="flex items-center gap-2">
+<span class="relative flex h-2 w-2">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+</span>
+<p class="text-white text-xl font-bold">En Tránsito</p>
+</div>
+</div>
+<div class="flex-1 min-w-[140px] bg-background-dark border border-primary/10 rounded-xl p-4 flex flex-col gap-1">
+<span class="text-xs font-semibold text-primary/60 uppercase tracking-wider">Progreso Global</span>
+<p class="text-white text-xl font-bold">45%</p>
+<div class="w-full bg-primary/20 rounded-full h-1.5 mt-2 overflow-hidden">
+<div class="bg-primary h-full rounded-full" style="width: 45%"></div>
+</div>
+</div>
+</section>
+<!-- Milestone Vertical Timeline -->
+<section class="space-y-4">
+<div class="flex items-center justify-between px-1">
+<h3 class="text-white text-sm font-bold uppercase tracking-widest opacity-60">Hitos del Recorrido</h3>
+<span class="text-primary text-xs font-medium">3 hitos configurados</span>
+</div>
+<div class="relative space-y-0">
+<!-- Vertical Line Decorator -->
+<div class="absolute left-[19px] top-4 bottom-4 w-0.5 bg-slate-700">
+<div class="w-full h-1/3 bg-primary rounded-full"></div>
+</div>
+<!-- Milestone 1: Completed -->
+<div class="relative grid grid-cols-[40px_1fr] gap-4 pb-8">
+<div class="flex flex-col items-center pt-1">
+<div class="z-10 bg-primary text-white rounded-full p-1 shadow-[0_0_15px_rgba(19,127,236,0.4)]">
+<span class="material-symbols-outlined text-[20px] font-bold">check_circle</span>
+</div>
+</div>
+<div class="bg-background-dark/50 border border-primary/30 rounded-xl p-4 space-y-3">
+<div class="flex justify-between items-start">
+<div>
+<h4 class="text-white font-bold text-base">Salida de Almacén</h4>
+<p class="text-primary text-xs font-medium">Completado</p>
+</div>
+<span class="material-symbols-outlined text-primary/40">inventory_2</span>
+</div>
+<div class="flex gap-4 border-t border-primary/10 pt-3">
+<div>
+<p class="text-[10px] text-slate-500 uppercase font-bold tracking-tighter">ETA</p>
+<p class="text-white text-sm font-mono">08:00 AM</p>
+</div>
+<div>
+<p class="text-[10px] text-primary uppercase font-bold tracking-tighter">REAL</p>
+<p class="text-primary text-sm font-mono font-bold">08:05 AM</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Milestone 2: Current/Pending -->
+<div class="relative grid grid-cols-[40px_1fr] gap-4 pb-8">
+<div class="flex flex-col items-center pt-1">
+<div class="z-10 bg-background-dark border-2 border-primary text-primary rounded-full p-1">
+<span class="material-symbols-outlined text-[20px] font-bold">schedule</span>
+</div>
+</div>
+<div class="bg-background-dark border border-primary/60 rounded-xl p-4 space-y-4 ring-1 ring-primary/20">
+<div class="flex justify-between items-start">
+<div>
+<h4 class="text-white font-bold text-base">Punto de Control A</h4>
+<p class="text-slate-400 text-xs font-medium">Próximo hito</p>
+</div>
+<span class="material-symbols-outlined text-primary">location_on</span>
+</div>
+<div class="flex gap-4 border-y border-primary/10 py-3">
+<div>
+<p class="text-[10px] text-slate-500 uppercase font-bold tracking-tighter">ETA</p>
+<p class="text-white text-sm font-mono">10:30 AM</p>
+</div>
+<div>
+<p class="text-[10px] text-slate-500 uppercase font-bold tracking-tighter">REAL</p>
+<p class="text-slate-600 text-sm font-mono">--:--</p>
+</div>
+</div>
+<!-- Geofence Actions -->
+<div class="space-y-3">
+<div class="bg-primary/5 rounded-lg p-3 border border-primary/10 flex items-start gap-3">
+<span class="material-symbols-outlined text-primary text-lg">send</span>
+<div class="flex-1">
+<p class="text-[10px] text-primary font-bold uppercase tracking-tight mb-1">Telegram Automático</p>
+<p class="text-slate-300 text-xs italic leading-relaxed">"Has ingresado a la zona A. Por favor, confirma descarga en la App."</p>
+</div>
+</div>
+<button class="w-full flex items-center justify-center gap-2 py-2.5 bg-primary rounded-lg text-white font-bold text-sm shadow-lg shadow-primary/20 active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-lg">edit_location_alt</span>
+                                Editar Geovalla
+                            </button>
+</div>
+</div>
+</div>
+<!-- Milestone 3: Destination -->
+<div class="relative grid grid-cols-[40px_1fr] gap-4">
+<div class="flex flex-col items-center pt-1">
+<div class="z-10 bg-background-dark border-2 border-slate-700 text-slate-600 rounded-full p-1">
+<span class="material-symbols-outlined text-[20px] font-bold">flag</span>
+</div>
+</div>
+<div class="bg-background-dark/30 border border-slate-800 rounded-xl p-4 space-y-3 opacity-60">
+<div class="flex justify-between items-start">
+<div>
+<h4 class="text-white font-bold text-base">Llegada a Destino</h4>
+<p class="text-slate-500 text-xs font-medium">Programado</p>
+</div>
+<span class="material-symbols-outlined text-slate-600">home_pin</span>
+</div>
+<div class="flex gap-4 border-t border-white/5 pt-3">
+<div>
+<p class="text-[10px] text-slate-500 uppercase font-bold tracking-tighter">ETA</p>
+<p class="text-slate-300 text-sm font-mono">02:00 PM</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Automation Settings Footer Overlay (Floating Simulation) -->
+<section class="pt-6">
+<div class="bg-gradient-to-br from-slate-800 to-background-dark border border-white/10 rounded-2xl p-5 shadow-2xl">
+<div class="flex items-center gap-3 mb-4">
+<div class="bg-primary/20 p-2 rounded-lg">
+<span class="material-symbols-outlined text-primary">smart_toy</span>
+</div>
+<div>
+<h4 class="text-white font-bold">Automatización Activa</h4>
+<p class="text-slate-400 text-xs">Integrado con Telegram Bot v2.4</p>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-3">
+<button class="flex flex-col items-center justify-center gap-2 p-3 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-colors">
+<span class="material-symbols-outlined text-primary">add_circle</span>
+<span class="text-[10px] font-bold text-white uppercase tracking-wider">Nuevo Hito</span>
+</button>
+<button class="flex flex-col items-center justify-center gap-2 p-3 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-colors">
+<span class="material-symbols-outlined text-primary">history_edu</span>
+<span class="text-[10px] font-bold text-white uppercase tracking-wider">Log Eventos</span>
+</button>
+</div>
+</div>
+</section>
+</main>
+<!-- Bottom Spacing for iPhone Home Indicator -->
+<div class="h-10"></div>
+<!-- Interactive Navigation (Floating Bottom Bar) -->
+<nav class="fixed bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-[340px] bg-background-dark/90 backdrop-blur-xl border border-white/10 rounded-full py-3 px-8 shadow-2xl flex items-center justify-between">
+<button class="text-primary flex flex-col items-center">
+<span class="material-symbols-outlined">analytics</span>
+<span class="text-[9px] font-bold mt-1">Dashboard</span>
+</button>
+<button class="text-white/40 flex flex-col items-center">
+<span class="material-symbols-outlined">route</span>
+<span class="text-[9px] font-bold mt-1">Rutas</span>
+</button>
+<button class="text-white/40 flex flex-col items-center">
+<span class="material-symbols-outlined">notifications</span>
+<span class="text-[9px] font-bold mt-1">Alertas</span>
+</button>
+<button class="text-white/40 flex flex-col items-center">
+<span class="material-symbols-outlined">settings</span>
+<span class="text-[9px] font-bold mt-1">Ajustes</span>
+</button>
+</nav>
+</body></html>

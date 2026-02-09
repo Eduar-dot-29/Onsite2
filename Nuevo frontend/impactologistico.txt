@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Impacto Logístico y ETA</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#137fec",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#101922",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Inter', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .ios-blur {
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen flex justify-center">
+<!-- Mobile Container (iOS Simulation) -->
+<div class="relative flex h-[844px] w-full max-w-[390px] flex-col bg-background-light dark:bg-background-dark overflow-hidden border-x border-slate-200 dark:border-slate-800 shadow-2xl">
+<!-- Top App Bar -->
+<div class="sticky top-0 z-20 flex items-center bg-background-light/80 dark:bg-background-dark/80 ios-blur p-4 pb-2 justify-between">
+<div class="text-primary flex size-10 shrink-0 items-center justify-center cursor-pointer">
+<span class="material-symbols-outlined">arrow_back_ios</span>
+</div>
+<h2 class="text-slate-900 dark:text-white text-lg font-bold leading-tight tracking-[-0.015em] flex-1 text-center pr-10">Impacto Logístico</h2>
+<div class="flex w-10 items-center justify-end">
+<button class="flex items-center justify-center text-primary">
+<span class="material-symbols-outlined">more_horiz</span>
+</button>
+</div>
+</div>
+<!-- Content Area -->
+<div class="flex-1 overflow-y-auto px-4 py-2 space-y-6">
+<!-- Status Alert Banner -->
+<div class="bg-orange-500/10 border border-orange-500/30 rounded-xl p-4 flex items-center gap-3">
+<div class="bg-orange-500 rounded-full p-2 flex items-center justify-center">
+<span class="material-symbols-outlined text-white text-sm leading-none">warning</span>
+</div>
+<div>
+<p class="text-orange-500 text-sm font-bold uppercase tracking-wider">Avería Detectada</p>
+<p class="text-slate-400 text-xs">Vehículo detenido • En espera de reparación</p>
+</div>
+</div>
+<!-- ETA Comparison Section -->
+<div class="space-y-3">
+<h3 class="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-widest px-1">Recálculo de ETA</h3>
+<div class="flex gap-3">
+<div class="flex-1 flex flex-col gap-2 rounded-xl p-5 bg-slate-100 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700">
+<p class="text-slate-500 dark:text-slate-400 text-xs font-medium">ETA Original</p>
+<p class="text-slate-400 dark:text-slate-500 tracking-tight text-2xl font-bold leading-tight line-through">14:00</p>
+</div>
+<div class="flex-1 flex flex-col gap-2 rounded-xl p-5 bg-primary/10 border border-primary/30">
+<p class="text-primary text-xs font-medium">Nuevo ETA</p>
+<p class="text-primary tracking-tight text-2xl font-bold leading-tight">18:30</p>
+<div class="flex items-center gap-1 text-[#0bda5b] text-xs font-bold bg-[#0bda5b]/10 rounded px-2 py-0.5 w-fit">
+<span class="material-symbols-outlined text-[14px]">schedule</span>
+                            +4h 30m
+                        </div>
+</div>
+</div>
+</div>
+<!-- Manual Adjustment Card -->
+<div class="bg-slate-100 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl p-5 space-y-4">
+<div class="flex items-center justify-between">
+<h3 class="text-slate-900 dark:text-white text-sm font-bold">Tiempo de Reparación</h3>
+<span class="material-symbols-outlined text-primary">build</span>
+</div>
+<div class="flex items-end gap-3">
+<label class="flex flex-col flex-1">
+<p class="text-slate-500 dark:text-slate-400 text-[11px] font-bold uppercase mb-1">Estimación Manual</p>
+<div class="relative">
+<select class="form-input flex w-full appearance-none rounded-lg text-slate-900 dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/50 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 h-12 px-4 text-base font-medium">
+<option value="4">4 horas 00 min</option>
+<option value="3.5">3 horas 30 min</option>
+<option value="4.5">4 horas 30 min</option>
+<option value="5">5 horas 00 min</option>
+</select>
+<div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-400">
+<span class="material-symbols-outlined">expand_more</span>
+</div>
+</div>
+</label>
+</div>
+<p class="text-slate-500 dark:text-slate-400 text-xs leading-relaxed italic">
+                    Actualizar este valor recalculará automáticamente el ETA de todos los puntos de entrega restantes.
+                </p>
+</div>
+<!-- Shipment Timeline -->
+<div class="space-y-4">
+<h3 class="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-widest px-1">Timeline del Envío</h3>
+<div class="relative pl-8 space-y-8 before:content-[''] before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-[2px] before:bg-slate-200 dark:before:bg-slate-700">
+<!-- Event 1: Completed -->
+<div class="relative">
+<div class="absolute -left-[27px] top-1 size-[14px] rounded-full bg-primary border-4 border-background-light dark:border-background-dark z-10"></div>
+<div class="flex flex-col">
+<div class="flex justify-between items-center">
+<span class="text-slate-900 dark:text-white text-sm font-bold">Salida de Almacén</span>
+<span class="text-slate-500 text-xs font-medium">08:00</span>
+</div>
+<span class="text-slate-500 text-xs">Confirmado por Centro Logístico</span>
+</div>
+</div>
+<!-- Event 2: Current/Incident -->
+<div class="relative">
+<div class="absolute -left-[30px] -top-0.5 size-5 rounded-full bg-orange-500/20 flex items-center justify-center z-10">
+<div class="size-[14px] rounded-full bg-orange-500 border-4 border-background-light dark:border-background-dark"></div>
+</div>
+<div class="flex flex-col p-3 bg-orange-500/5 border border-orange-500/20 rounded-lg">
+<div class="flex justify-between items-center mb-1">
+<span class="text-orange-500 text-sm font-bold">Evento de Avería</span>
+<span class="text-orange-500 text-xs font-bold">10:30</span>
+</div>
+<span class="text-slate-400 text-xs mb-2">Esperando actualización de estado</span>
+<div class="flex items-center gap-2">
+<span class="text-[10px] bg-orange-500/20 text-orange-500 px-2 py-0.5 rounded-full font-bold uppercase tracking-tighter">Acción Requerida</span>
+</div>
+</div>
+</div>
+<!-- Event 3: Projected -->
+<div class="relative opacity-60">
+<div class="absolute -left-[27px] top-1 size-[14px] rounded-full bg-slate-400 border-4 border-background-light dark:border-background-dark z-10"></div>
+<div class="flex flex-col">
+<div class="flex justify-between items-center">
+<span class="text-slate-400 dark:text-slate-500 text-sm font-bold">Llegada a Destino</span>
+<span class="text-primary text-xs font-bold">18:30 (Est.)</span>
+</div>
+<span class="text-slate-500 text-xs">Punto de Entrega Final</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Sticky Footer Action -->
+<div class="p-4 bg-background-light/95 dark:bg-background-dark/95 border-t border-slate-200 dark:border-slate-800 ios-blur">
+<button class="w-full bg-primary hover:bg-primary/90 text-white h-14 rounded-xl font-bold text-base transition-colors flex items-center justify-center gap-2 shadow-lg shadow-primary/20">
+<span class="material-symbols-outlined">update</span>
+                Actualizar Logística
+            </button>
+<!-- iOS Home Indicator -->
+<div class="mt-4 mx-auto w-32 h-1.5 bg-slate-300 dark:bg-slate-700 rounded-full"></div>
+</div>
+</div>
+</body></html>

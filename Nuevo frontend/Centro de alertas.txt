@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html class="dark" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Centro de Alertas</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#137fec",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#101922",
+                        "warning": "#f59e0b",
+                        "danger": "#ef4444",
+                    },
+                    fontFamily: {
+                        "display": ["Inter"]
+                    },
+                    borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" },
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Inter', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        body {
+            min-height: max(884px, 100dvh);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen flex justify-center">
+<div class="relative w-full max-w-[430px] min-h-screen bg-background-light dark:bg-background-dark shadow-2xl flex flex-col overflow-hidden">
+<div class="h-11 w-full bg-background-dark"></div>
+<header class="flex items-center justify-between px-4 py-2 bg-background-dark border-b border-white/5">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[28px]">radar</span>
+<h1 class="text-lg font-bold tracking-tight">On-Transit</h1>
+</div>
+<div class="flex items-center gap-3">
+<button class="relative p-2 text-slate-400 hover:text-white transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-2 right-2 flex h-2 w-2">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-danger opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2 w-2 bg-danger"></span>
+</span>
+</button>
+<button class="p-2 text-slate-400">
+<span class="material-symbols-outlined">sync</span>
+</button>
+</div>
+</header>
+<main class="flex-1 overflow-y-auto pb-24 no-scrollbar">
+<section class="px-4 py-4">
+<div class="relative group h-[220px] w-full rounded-xl overflow-hidden shadow-lg border border-white/10">
+<div class="absolute inset-0 bg-slate-800 bg-cover bg-center transition-transform duration-700 group-hover:scale-105" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuAapEyZdn3K3-I9DNZJyw1NCs2T7mw_qHGKCL5CB8HVOA-KiBOH_4Pqf8eNetOYhUbMCtRgLDDI8rjQmX-9WjMseWTs8cqIfqTPLr0JBSwm-x3n9Dd3lu5Vm6lbRmrytV8wWawQFRFBRILWMB0PTFmwAv7_fBXl0BthXCkZG0CsIsDKAUOuxTyHPGwXRee4RbaTsn1LQqflSZauLH8YvKvYE-DInHEohDIwc9AqOqsllAu8-zIgAmqTnhf-CKbjZOkC11K2bqQtB0I");'>
+<div class="absolute inset-0 bg-primary/10 mix-blend-overlay"></div>
+</div>
+<div class="absolute top-3 left-3 flex items-center gap-1.5 bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/20">
+<div class="w-2 h-2 rounded-full bg-danger animate-pulse"></div>
+<span class="text-[10px] font-bold uppercase tracking-widest text-white">Mapa en vivo</span>
+</div>
+<div class="absolute bottom-3 right-3 flex flex-col gap-1">
+<div class="bg-black/60 backdrop-blur-md p-1.5 rounded-lg border border-white/20">
+<span class="material-symbols-outlined text-sm text-white block">add</span>
+</div>
+<div class="bg-black/60 backdrop-blur-md p-1.5 rounded-lg border border-white/20">
+<span class="material-symbols-outlined text-sm text-white block">remove</span>
+</div>
+</div>
+</div>
+</section>
+<div class="flex gap-2 px-4 mb-4 overflow-x-auto no-scrollbar">
+<button class="flex shrink-0 items-center justify-center h-9 px-4 rounded-full bg-primary text-white text-sm font-semibold shadow-md shadow-primary/20">
+                    Todas las Alertas (12)
+                </button>
+<button class="flex shrink-0 items-center justify-center h-9 px-4 rounded-full bg-background-light dark:bg-white/5 border border-white/10 text-slate-400 text-sm font-medium">
+                    Retrasados
+                </button>
+<button class="flex shrink-0 items-center justify-center h-9 px-4 rounded-full bg-background-light dark:bg-white/5 border border-white/10 text-slate-400 text-sm font-medium">
+                    Sin Respuesta
+                </button>
+</div>
+<div class="px-4 space-y-4">
+<div class="flex items-center justify-between">
+<h2 class="text-sm font-bold uppercase tracking-widest text-slate-500">Excepciones Críticas</h2>
+<span class="text-xs font-medium text-primary">Ver Cronología</span>
+</div>
+<div class="bg-white/5 border-l-4 border-danger rounded-lg p-4 shadow-sm backdrop-blur-sm">
+<div class="flex justify-between items-start mb-3">
+<div>
+<div class="flex items-center gap-2 mb-1">
+<span class="text-[10px] font-extrabold bg-danger/20 text-danger px-1.5 py-0.5 rounded uppercase">Crítico</span>
+<span class="text-xs text-slate-400">#AX-9022</span>
+</div>
+<h3 class="text-base font-bold text-white leading-tight">Conductor: Juan Pérez</h3>
+<p class="text-sm text-slate-400 flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">location_on</span>
+                                Destino: Los Angeles, CA
+                            </p>
+</div>
+<div class="text-right">
+<p class="text-danger text-sm font-bold uppercase">SIN RESPUESTA</p>
+<p class="text-slate-500 text-[11px]">Hace 30 min</p>
+</div>
+</div>
+<div class="flex gap-2 pt-1">
+<button class="flex-1 h-10 rounded-lg bg-white/10 text-white text-sm font-semibold flex items-center justify-center gap-2 active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-[18px]">send_to_mobile</span>
+                            Reenviar Check-in
+                        </button>
+<button class="flex-1 h-10 rounded-lg bg-primary text-white text-sm font-semibold flex items-center justify-center gap-2 shadow-lg shadow-primary/20 active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-[18px]">call</span>
+                            Llamar Conductor
+                        </button>
+</div>
+</div>
+<div class="bg-white/5 border-l-4 border-warning rounded-lg p-4 shadow-sm backdrop-blur-sm">
+<div class="flex justify-between items-start mb-3">
+<div>
+<div class="flex items-center gap-2 mb-1">
+<span class="text-[10px] font-extrabold bg-warning/20 text-warning px-1.5 py-0.5 rounded uppercase">Urgente</span>
+<span class="text-xs text-slate-400">#BZ-4411</span>
+</div>
+<h3 class="text-base font-bold text-white leading-tight">Conductor: Maria Garcia</h3>
+<p class="text-sm text-slate-400 flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">location_on</span>
+                                Destino: Phoenix, AZ
+                            </p>
+</div>
+<div class="text-right">
+<p class="text-warning text-sm font-bold uppercase">RETRASADO</p>
+<p class="text-slate-500 text-[11px]">Tráfico: +45m</p>
+</div>
+</div>
+<div class="flex gap-2 pt-1">
+<button class="flex-1 h-10 rounded-lg bg-white/10 text-white text-sm font-semibold flex items-center justify-center gap-2 active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-[18px]">chat</span>
+                            Mensaje
+                        </button>
+<button class="flex-1 h-10 rounded-lg bg-primary text-white text-sm font-semibold flex items-center justify-center gap-2 shadow-lg shadow-primary/20 active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-[18px]">call</span>
+                            Llamar Conductor
+                        </button>
+</div>
+</div>
+<div class="bg-white/5 border-l-4 border-danger rounded-lg p-4 shadow-sm backdrop-blur-sm">
+<div class="flex justify-between items-start mb-3">
+<div>
+<div class="flex items-center gap-2 mb-1">
+<span class="text-[10px] font-extrabold bg-danger/20 text-danger px-1.5 py-0.5 rounded uppercase">Crítico</span>
+<span class="text-xs text-slate-400">#KL-1109</span>
+</div>
+<h3 class="text-base font-bold text-white leading-tight">Conductor: Sam Rivers</h3>
+<p class="text-sm text-slate-400 flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">location_on</span>
+                                Destino: Portland, OR
+                            </p>
+</div>
+<div class="text-right">
+<p class="text-danger text-sm font-bold uppercase">FUERA DE RUTA</p>
+<p class="text-slate-500 text-[11px]">Último ping: 12m</p>
+</div>
+</div>
+<div class="flex gap-2 pt-1">
+<button class="flex-1 h-10 rounded-lg bg-white/10 text-white text-sm font-semibold flex items-center justify-center gap-2 active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-[18px]">send_to_mobile</span>
+                            Reenviar Check-in
+                        </button>
+<button class="flex-1 h-10 rounded-lg bg-primary text-white text-sm font-semibold flex items-center justify-center gap-2 shadow-lg shadow-primary/20 active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-[18px]">call</span>
+                            Llamar Conductor
+                        </button>
+</div>
+</div>
+</div>
+</main>
+<div class="absolute bottom-20 left-4 right-4 h-12 bg-primary flex items-center justify-between px-6 rounded-xl shadow-xl shadow-primary/40 z-20">
+<p class="text-white text-xs font-bold uppercase tracking-wider">Resumen Operativo</p>
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-1.5">
+<div class="w-1.5 h-1.5 rounded-full bg-white/40"></div>
+<span class="text-white text-sm font-bold">142</span>
+</div>
+<div class="flex items-center gap-1.5">
+<div class="w-1.5 h-1.5 rounded-full bg-danger"></div>
+<span class="text-white text-sm font-bold">12</span>
+</div>
+</div>
+</div>
+<nav class="absolute bottom-0 w-full h-20 bg-background-dark/80 backdrop-blur-xl border-t border-white/5 flex items-center justify-around px-6 pb-4">
+<div class="flex flex-col items-center gap-1 text-primary">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="text-[10px] font-bold">Alertas</span>
+</div>
+<div class="flex flex-col items-center gap-1 text-slate-500">
+<span class="material-symbols-outlined">map</span>
+<span class="text-[10px] font-medium">Flota</span>
+</div>
+<div class="flex flex-col items-center gap-1 text-slate-500">
+<span class="material-symbols-outlined">local_shipping</span>
+<span class="text-[10px] font-medium">Activos</span>
+</div>
+<div class="flex flex-col items-center gap-1 text-slate-500">
+<span class="material-symbols-outlined">settings</span>
+<span class="text-[10px] font-medium">Ajustes</span>
+</div>
+</nav>
+<div class="absolute bottom-1.5 left-1/2 -translate-x-1/2 w-32 h-1 bg-white/20 rounded-full"></div>
+</div>
+
+</body></html>

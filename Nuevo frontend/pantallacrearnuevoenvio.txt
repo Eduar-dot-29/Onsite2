@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html class="dark" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Crear Nuevo Envío - On-site-On-Transit</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#137fec",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#101922",
+                    },
+                    fontFamily: {
+                        "display": ["Inter"]
+                    },
+                    borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" },
+                },
+            },
+        }
+    </script>
+<style type="text/tailwindcss">
+        body {
+            font-family: 'Inter', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }::-webkit-scrollbar {
+            width: 4px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #324d67;
+            border-radius: 10px;
+        }
+        body {
+            min-height: max(884px, 100dvh);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen flex justify-center">
+<div class="relative flex h-full min-h-screen w-full max-w-[480px] flex-col bg-background-light dark:bg-background-dark overflow-x-hidden border-x border-slate-200 dark:border-slate-800 pb-24">
+<div class="sticky top-0 z-20 flex items-center bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md p-4 pb-2 justify-between">
+<div class="text-primary flex size-10 shrink-0 items-center justify-center rounded-full hover:bg-primary/10 transition-colors">
+<span class="material-symbols-outlined">arrow_back_ios_new</span>
+</div>
+<h2 class="text-slate-900 dark:text-white text-lg font-bold leading-tight tracking-tight flex-1 text-center pr-10">Crear Nuevo Envío</h2>
+</div>
+<div class="flex flex-col gap-6 p-4">
+<section class="flex flex-col gap-4">
+<h3 class="text-slate-900 dark:text-white text-sm font-semibold uppercase tracking-wider opacity-60 px-1">Información Básica</h3>
+<div class="flex flex-col gap-4 bg-white dark:bg-primary/5 p-4 rounded-xl border border-slate-200 dark:border-primary/20 shadow-sm">
+<label class="flex flex-col gap-2">
+<p class="text-slate-700 dark:text-slate-300 text-sm font-medium">ID de Envío / Referencia</p>
+<input class="form-input w-full rounded-lg border-slate-300 dark:border-slate-700 bg-white dark:bg-background-dark text-slate-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-primary h-12 placeholder:text-slate-400 dark:placeholder:text-slate-600 px-4" placeholder="ej. SHP-99283-X" type="text"/>
+</label>
+<label class="flex flex-col gap-2">
+<p class="text-slate-700 dark:text-slate-300 text-sm font-medium">Origen</p>
+<div class="relative">
+<input class="form-input w-full rounded-lg border-slate-300 dark:border-slate-700 bg-white dark:bg-background-dark text-slate-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-primary h-12 pl-11 placeholder:text-slate-400 dark:placeholder:text-slate-600" placeholder="Dirección de origen o puerto" type="text"/>
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">location_on</span>
+</div>
+</label>
+<label class="flex flex-col gap-2">
+<p class="text-slate-700 dark:text-slate-300 text-sm font-medium">Destino</p>
+<div class="relative">
+<input class="form-input w-full rounded-lg border-slate-300 dark:border-slate-700 bg-white dark:bg-background-dark text-slate-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-primary h-12 pl-11 placeholder:text-slate-400 dark:placeholder:text-slate-600" placeholder="Dirección de destino o puerto" type="text"/>
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-primary">navigation</span>
+</div>
+</label>
+</div>
+</section>
+<section class="flex flex-col gap-4">
+<h3 class="text-slate-900 dark:text-white text-sm font-semibold uppercase tracking-wider opacity-60 px-1">Horario de Salida</h3>
+<div class="flex flex-col gap-4 bg-white dark:bg-primary/5 p-4 rounded-xl border border-slate-200 dark:border-primary/20 shadow-sm">
+<div class="flex gap-4">
+<label class="flex flex-col gap-2 flex-1">
+<p class="text-slate-700 dark:text-slate-300 text-sm font-medium">Fecha de Salida</p>
+<input class="form-input w-full rounded-lg border-slate-300 dark:border-slate-700 bg-white dark:bg-background-dark text-slate-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-primary h-12 px-4" type="date"/>
+</label>
+<label class="flex flex-col gap-2 w-32">
+<p class="text-slate-700 dark:text-slate-300 text-sm font-medium">Hora</p>
+<input class="form-input w-full rounded-lg border-slate-300 dark:border-slate-700 bg-white dark:bg-background-dark text-slate-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-primary h-12 px-4" type="time"/>
+</label>
+</div>
+<label class="flex flex-col gap-2">
+<p class="text-slate-700 dark:text-slate-300 text-sm font-medium">Zona Horaria (IANA)</p>
+<div class="relative">
+<select class="form-select w-full rounded-lg border-slate-300 dark:border-slate-700 bg-white dark:bg-background-dark text-slate-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-primary h-12 pl-11">
+<option>UTC +00:00 (Universal)</option>
+<option selected="">America/New_York (EST)</option>
+<option>Europe/London (GMT)</option>
+<option>Asia/Tokyo (JST)</option>
+</select>
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">schedule</span>
+</div>
+</label>
+</div>
+</section>
+<section class="flex flex-col gap-4">
+<h3 class="text-slate-900 dark:text-white text-sm font-semibold uppercase tracking-wider opacity-60 px-1">Reglas de Check-in</h3>
+<div class="flex flex-col gap-4 bg-white dark:bg-primary/5 p-4 rounded-xl border border-slate-200 dark:border-primary/20 shadow-sm">
+<div class="flex p-1 bg-slate-100 dark:bg-background-dark rounded-lg border border-slate-200 dark:border-slate-700">
+<button class="flex-1 py-2 text-sm font-semibold rounded-md bg-white dark:bg-primary text-primary dark:text-white shadow-sm">Intervalo</button>
+<button class="flex-1 py-2 text-sm font-semibold rounded-md text-slate-500 dark:text-slate-400">Hitos</button>
+</div>
+<div class="flex items-center justify-between p-3 bg-slate-50 dark:bg-background-dark/50 rounded-lg border border-slate-100 dark:border-slate-800">
+<div class="flex flex-col">
+<span class="text-sm font-medium">Frecuencia de actualización</span>
+<span class="text-xs text-slate-500">Cada cuánto debe reportar el conductor</span>
+</div>
+<div class="flex items-center gap-3">
+<button class="size-8 flex items-center justify-center rounded-full border border-primary text-primary hover:bg-primary/10">
+<span class="material-symbols-outlined text-base">remove</span>
+</button>
+<span class="text-lg font-bold w-12 text-center">2h</span>
+<button class="size-8 flex items-center justify-center rounded-full bg-primary text-white">
+<span class="material-symbols-outlined text-base">add</span>
+</button>
+</div>
+</div>
+</div>
+</section>
+<section class="flex flex-col gap-4">
+<h3 class="text-slate-900 dark:text-white text-sm font-semibold uppercase tracking-wider opacity-60 px-1">Personal</h3>
+<div class="flex flex-col gap-4 bg-white dark:bg-primary/5 p-4 rounded-xl border border-slate-200 dark:border-primary/20 shadow-sm">
+<label class="flex flex-col gap-2">
+<p class="text-slate-700 dark:text-slate-300 text-sm font-medium">Asignar Conductor</p>
+<div class="relative">
+<input class="form-input w-full rounded-lg border-slate-300 dark:border-slate-700 bg-white dark:bg-background-dark text-slate-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-primary h-12 pl-11 placeholder:text-slate-400 dark:placeholder:text-slate-600" placeholder="Buscar por nombre o ID de Telegram" type="text"/>
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">person_search</span>
+</div>
+</label>
+<div class="flex items-center gap-3 p-2 bg-primary/10 rounded-lg border border-primary/20">
+<div class="size-10 rounded-full bg-primary/20 flex items-center justify-center">
+<span class="material-symbols-outlined text-primary">account_circle</span>
+</div>
+<div class="flex flex-col">
+<span class="text-sm font-semibold">Sugerido: Alex Thompson</span>
+<span class="text-xs text-slate-500">@alex_trucker_88 • ID: 55210</span>
+</div>
+<button class="ml-auto text-primary text-sm font-bold px-2">Seleccionar</button>
+</div>
+</div>
+</section>
+</div>
+<div class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[480px] bg-background-light/90 dark:bg-background-dark/90 backdrop-blur-lg border-t border-slate-200 dark:border-slate-800 p-4 pb-8 z-30">
+<button class="w-full bg-primary hover:bg-primary/90 text-white font-bold py-4 rounded-xl shadow-lg shadow-primary/20 transition-all active:scale-[0.98] flex items-center justify-center gap-2">
+<span class="material-symbols-outlined">local_shipping</span>
+                Crear Envío
+            </button>
+</div>
+</div>
+
+</body></html>

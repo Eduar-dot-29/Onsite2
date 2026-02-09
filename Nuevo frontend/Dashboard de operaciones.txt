@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html class="dark" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Dashboard de Operaciones</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#137fec",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#101922",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" },
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+        .pulse-dot {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: .5; }
+        }
+    </style>
+<style>
+        body {
+            min-height: max(884px, 100dvh);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-white">
+<div class="h-12 w-full bg-background-light dark:bg-background-dark"></div>
+<div class="relative flex h-auto min-h-screen w-full flex-col bg-background-light dark:bg-background-dark group/design-root overflow-x-hidden">
+<div class="flex items-center bg-background-light dark:bg-background-dark p-4 pb-2 justify-between sticky top-0 z-10">
+<div class="flex items-center gap-2">
+<div class="text-primary flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/10" data-icon="TelegramLogo">
+<span class="material-symbols-outlined text-2xl">send</span>
+</div>
+<div class="flex flex-col">
+<div class="flex items-center gap-2">
+<h2 class="text-slate-900 dark:text-white text-xl font-bold leading-tight tracking-tight">Operaciones</h2>
+<span class="flex h-2 w-2 rounded-full bg-emerald-500 pulse-dot"></span>
+</div>
+<p class="text-xs text-slate-500 dark:text-primary/70 font-medium">Auto-sincronizado vía Telegram</p>
+</div>
+</div>
+<div class="flex items-center gap-1">
+<button class="flex size-10 items-center justify-center rounded-full bg-slate-100 dark:bg-primary/10 text-slate-900 dark:text-white">
+<span class="material-symbols-outlined text-2xl">notifications</span>
+</button>
+</div>
+</div>
+<div class="flex gap-3 p-4 overflow-x-auto no-scrollbar">
+<div class="flex min-w-[140px] flex-1 flex-col gap-2 rounded-xl p-4 bg-primary/10 border border-primary/20">
+<div class="flex items-center gap-2 text-primary">
+<span class="material-symbols-outlined text-sm">local_shipping</span>
+<p class="text-[13px] font-semibold uppercase tracking-wider">Envíos activos</p>
+</div>
+<p class="text-slate-900 dark:text-white text-2xl font-bold leading-tight">24</p>
+<div class="flex items-center gap-1 text-emerald-500">
+<span class="material-symbols-outlined text-sm">trending_up</span>
+<p class="text-xs font-medium">+5%</p>
+</div>
+</div>
+<div class="flex min-w-[140px] flex-1 flex-col gap-2 rounded-xl p-4 bg-orange-500/10 border border-orange-500/20">
+<div class="flex items-center gap-2 text-orange-500">
+<span class="material-symbols-outlined text-sm">schedule</span>
+<p class="text-[13px] font-semibold uppercase tracking-wider">Retrasados</p>
+</div>
+<p class="text-slate-900 dark:text-white text-2xl font-bold leading-tight">3</p>
+<div class="flex items-center gap-1 text-orange-500">
+<span class="material-symbols-outlined text-sm">warning</span>
+<p class="text-xs font-medium">Crítico</p>
+</div>
+</div>
+<div class="flex min-w-[140px] flex-1 flex-col gap-2 rounded-xl p-4 bg-emerald-500/10 border border-emerald-500/20">
+<div class="flex items-center gap-2 text-emerald-500">
+<span class="material-symbols-outlined text-sm">check_circle</span>
+<p class="text-[13px] font-semibold uppercase tracking-wider">Entregados</p>
+</div>
+<p class="text-slate-900 dark:text-white text-2xl font-bold leading-tight">142</p>
+<div class="flex items-center gap-1 text-emerald-500">
+<span class="material-symbols-outlined text-sm">auto_awesome</span>
+<p class="text-xs font-medium">Hoy</p>
+</div>
+</div>
+</div>
+<div class="flex items-center justify-between px-4 pt-4 pb-2">
+<h3 class="text-slate-900 dark:text-white text-lg font-bold leading-tight tracking-tight">Envíos en tiempo real</h3>
+<button class="text-primary text-sm font-semibold">Ver todos</button>
+</div>
+<div class="flex flex-col gap-4 p-4">
+<div class="flex flex-col gap-4 rounded-xl p-4 bg-white dark:bg-[#192633] border border-slate-200 dark:border-slate-800 shadow-sm">
+<div class="flex items-start justify-between">
+<div class="flex flex-col gap-0.5">
+<div class="flex items-center gap-2">
+<span class="text-slate-900 dark:text-white font-bold text-base">#ST-9942</span>
+<span class="bg-red-500/10 text-red-500 text-[10px] font-bold px-2 py-0.5 rounded-full border border-red-500/20 uppercase">Retrasado</span>
+</div>
+<p class="text-slate-500 dark:text-slate-400 text-sm flex items-center gap-1">
+<span class="material-symbols-outlined text-base">person</span> Alex Rivera
+                        </p>
+</div>
+<div class="flex flex-col items-end gap-1">
+<p class="text-slate-400 dark:text-slate-500 text-[10px] uppercase font-bold">Próximo Check-in</p>
+<p class="text-slate-900 dark:text-white font-semibold text-sm">14:30</p>
+</div>
+</div>
+<div class="flex flex-col gap-2">
+<div class="flex justify-between text-[11px] font-medium text-slate-400">
+<span>San Francisco, CA</span>
+<span>65% del Trayecto</span>
+<span>Austin, TX</span>
+</div>
+<div class="h-1.5 w-full bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+<div class="h-full bg-primary rounded-full" style="width: 65%;"></div>
+</div>
+</div>
+<div class="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800">
+<div class="flex items-center gap-2 text-primary">
+<span class="material-symbols-outlined text-lg">chat_bubble</span>
+<p class="text-xs font-medium">Última actualización vía Telegram hace 12m</p>
+</div>
+<button class="text-primary bg-primary/10 px-3 py-1.5 rounded-lg text-xs font-bold">Ver historial</button>
+</div>
+</div>
+<div class="flex flex-col gap-4 rounded-xl p-4 bg-white dark:bg-[#192633] border border-slate-200 dark:border-slate-800 shadow-sm">
+<div class="flex items-start justify-between">
+<div class="flex flex-col gap-0.5">
+<div class="flex items-center gap-2">
+<span class="text-slate-900 dark:text-white font-bold text-base">#ST-9945</span>
+<span class="bg-primary/10 text-primary text-[10px] font-bold px-2 py-0.5 rounded-full border border-primary/20 uppercase">En Tránsito</span>
+</div>
+<p class="text-slate-500 dark:text-slate-400 text-sm flex items-center gap-1">
+<span class="material-symbols-outlined text-base">person</span> Sarah Jenkins
+                        </p>
+</div>
+<div class="flex flex-col items-end gap-1">
+<p class="text-slate-400 dark:text-slate-500 text-[10px] uppercase font-bold">Próximo Check-in</p>
+<p class="text-slate-900 dark:text-white font-semibold text-sm">15:15</p>
+</div>
+</div>
+<div class="flex flex-col gap-2">
+<div class="flex justify-between text-[11px] font-medium text-slate-400">
+<span>Seattle, WA</span>
+<span>28% del Trayecto</span>
+<span>Phoenix, AZ</span>
+</div>
+<div class="h-1.5 w-full bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+<div class="h-full bg-primary rounded-full" style="width: 28%;"></div>
+</div>
+</div>
+<div class="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800">
+<div class="flex items-center gap-2 text-emerald-500">
+<span class="material-symbols-outlined text-lg">check_circle</span>
+<p class="text-xs font-medium">Auto-confirmado por IA</p>
+</div>
+<button class="text-primary bg-primary/10 px-3 py-1.5 rounded-lg text-xs font-bold">Ver historial</button>
+</div>
+</div>
+<div class="flex flex-col gap-4 rounded-xl p-4 bg-white dark:bg-[#192633] border border-slate-200 dark:border-slate-800 shadow-sm">
+<div class="flex items-start justify-between">
+<div class="flex flex-col gap-0.5">
+<div class="flex items-center gap-2">
+<span class="text-slate-900 dark:text-white font-bold text-base">#ST-8812</span>
+<span class="bg-primary/10 text-primary text-[10px] font-bold px-2 py-0.5 rounded-full border border-primary/20 uppercase">En Tránsito</span>
+</div>
+<p class="text-slate-500 dark:text-slate-400 text-sm flex items-center gap-1">
+<span class="material-symbols-outlined text-base">person</span> Marcus Webb
+                        </p>
+</div>
+<div class="flex flex-col items-end gap-1">
+<p class="text-slate-400 dark:text-slate-500 text-[10px] uppercase font-bold">Próximo Check-in</p>
+<p class="text-slate-900 dark:text-white font-semibold text-sm">14:45</p>
+</div>
+</div>
+<div class="flex flex-col gap-2">
+<div class="flex justify-between text-[11px] font-medium text-slate-400">
+<span>Denver, CO</span>
+<span>92% del Trayecto</span>
+<span>Chicago, IL</span>
+</div>
+<div class="h-1.5 w-full bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+<div class="h-full bg-emerald-500 rounded-full" style="width: 92%;"></div>
+</div>
+</div>
+<div class="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800">
+<div class="flex items-center gap-2 text-primary">
+<span class="material-symbols-outlined text-lg">near_me</span>
+<p class="text-xs font-medium">Entrando en Zona Terminal</p>
+</div>
+<button class="text-primary bg-primary/10 px-3 py-1.5 rounded-lg text-xs font-bold">Ver historial</button>
+</div>
+</div>
+</div>
+<button class="fixed bottom-24 right-6 flex size-14 items-center justify-center rounded-full bg-primary text-white shadow-lg shadow-primary/40">
+<span class="material-symbols-outlined text-3xl">add</span>
+</button>
+<div class="fixed bottom-0 w-full bg-white/80 dark:bg-[#101922]/90 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 px-6 py-3 flex justify-between items-center z-20">
+<div class="flex flex-col items-center gap-1 text-primary">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="text-[10px] font-bold">Ops</span>
+</div>
+<div class="flex flex-col items-center gap-1 text-slate-400">
+<span class="material-symbols-outlined">map</span>
+<span class="text-[10px] font-bold">Mapa</span>
+</div>
+<div class="flex flex-col items-center gap-1 text-slate-400">
+<span class="material-symbols-outlined">inventory_2</span>
+<span class="text-[10px] font-bold">Historial</span>
+</div>
+<div class="flex flex-col items-center gap-1 text-slate-400">
+<span class="material-symbols-outlined">settings</span>
+<span class="text-[10px] font-bold">Ajustes</span>
+</div>
+</div>
+<div class="h-24"></div>
+</div>
+
+</body></html>
